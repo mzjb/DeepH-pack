@@ -3,12 +3,10 @@
 </p>
 
 --------------------------------------------------------------------------------
-
+[![DOI:10.1038/s43588-022-00265-6](https://zenodo.org/badge/DOI/10.1038/s43588-022-00265-6.svg)](https://doi.org/10.1038/s43588-022-00265-6)
 [![Documentation Status](https://readthedocs.org/projects/deeph-pack/badge/)](https://deeph-pack.readthedocs.io/)
 
-DeepH-pack is the official implementation of the Deep Hamiltonian (DeepH) method described in the following paper:
-
-[Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation](https://www.nature.com/articles/s43588-022-00265-6).
+DeepH-pack is the official implementation of the Deep Hamiltonian (DeepH) method described in the paper [*Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation*](https://www.nature.com/articles/s43588-022-00265-6) and in the [Research Briefing](https://www.nature.com/articles/s43588-022-00270-9).
 
 For more information, see the [documentation](https://deeph-pack.readthedocs.io).
 
@@ -22,13 +20,18 @@ For more information, see the [documentation](https://deeph-pack.readthedocs.io)
 ## How to cite
 
 ```
-@misc{deeph,
-      title={Deep-Learning Density Functional Theory Hamiltonian for Efficient ab initio Electronic-Structure Calculation}, 
-      author={He Li and Zun Wang and Nianlong Zou and Meng Ye and Runzhang Xu and Xiaoxun Gong and Wenhui Duan and Yong Xu},
-      year={2021},
-      eprint={2104.03786},
-      archivePrefix={arXiv},
-      primaryClass={cond-mat.mtrl-sci}
+@article{deeph,
+   author = {Li, He and Wang, Zun and Zou, Nianlong and Ye, Meng and Xu, Runzhang and Gong, Xiaoxun and Duan, Wenhui and Xu, Yong},
+   title = {Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation},
+   journal = {Nature Computational Science},
+   volume = {2},
+   number = {6},
+   pages = {367-377},
+   ISSN = {2662-8457},
+   DOI = {10.1038/s43588-022-00265-6},
+   url = {https://doi.org/10.1038/s43588-022-00265-6},
+   year = {2022},
+   type = {Journal Article}
 }
 ```
 
@@ -48,7 +51,7 @@ Prepare the Python 3.9 interpreter. Install the following Python packages requir
 - pathos
 - psutil
 
-In Linux, you can quickly achieve the requirements by running::
+In Linux, you can quickly achieve the requirements by running
 
 ```bash
 # install miniconda with python 3.9
