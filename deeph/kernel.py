@@ -76,8 +76,12 @@ class DeepHKernal:
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
         torch.cuda.empty_cache()
+        
         if config.getint('basic', 'num_threads', fallback=-1) == -1:
-            torch.set_num_threads(cpu_count(logical=False) // torch.cuda.device_count())
+            if torch.cuda.device_count() is 0:
+                torch.set_num_threads(cpu_count(logical=False))
+            else:
+                torch.set_num_threads(cpu_count(logical=False) // torch.cuda.device_count())
         else:
             torch.set_num_threads(config.getint('basic', 'num_threads'))
 
