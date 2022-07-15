@@ -687,6 +687,7 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
                 atom_num_orbital = load_orbital_types(os.path.join(tb_folder, 'orbital_types.dat'))
 
                 if interface == 'npz':
+                    graph_key_list = ['term_real']
                     read_terms_dict = {'term_real': {}}
                     hopping_dict_read = np.load(os.path.join(tb_folder, 'rh.npz'))
                     for k, v in hopping_dict_read.items():
