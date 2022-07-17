@@ -10,10 +10,12 @@ The default value can be found in `DeepH-pack/deeph/preprocess/preprocess_defaul
 
 - *interface* : Which DFT package is used to get the Hamiltonian. Can only be 'openmx' for now.
 
++ *multiprocessing* : Whether to use multiprocessing to perform `Preprocess` for different data.
+
 ## interpreter
 
 - *julia_interpreter* : The path to the julia interpreter.
 
 ## graph
 
-- *radius* : The cut-off radius to create the local coordinate systems. It is required bigger than the cut-off radius of local basis set.
+- *radius* : The additional cut-off radius for crystal graph created by the truncation that adopted in Hamiltonian matrices. `-1.0` means using the same truncation that adopted in Hamiltonian matrices.

@@ -188,16 +188,6 @@ def get_inference_config(*args):
     return config
 
 
-def get_preprocess_old_config(*args):
-    config = ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), 'preprocess_old', 'preprocess_default.ini'))
-    for config_file in args:
-        config.read(config_file)
-    assert config['basic']['target'] in ['hamiltonian', 'density_matrix', 'O_ij', 'E_ij', 'E_i']
-
-    return config
-
-
 def get_preprocess_config(*args):
     config = ConfigParser()
     config.read(os.path.join(os.path.dirname(__file__), 'preprocess', 'preprocess_default.ini'))
@@ -205,5 +195,6 @@ def get_preprocess_config(*args):
         config.read(config_file)
     assert config['basic']['target'] in ['hamiltonian', 'density_matrix', 'phiVdphi']
     assert config['basic']['interface'] in ['openmx', 'siesta']
+    assert config['basic']['multiprocessing'] in ['False'], 'multiprocessing is not yet implemented'
 
     return config

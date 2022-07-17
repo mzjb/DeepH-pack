@@ -14,7 +14,7 @@ Prepare the Python 3.9 interpreter. Install the following Python packages requir
 * NumPy
 * PyTorch = 1.9.1
 * PyTorch Geometric = 1.7.2
-* e3nn
+* e3nn = 0.3.5
 * pymatgen
 * h5py
 * TensorBoard
@@ -35,7 +35,7 @@ In Linux, you can quickly achieve the requirements by running::
    conda install pymatgen -c conda-forge
 
    # install packages by pip
-   pip install e3nn
+   pip install e3nn==0.3.5
    pip install h5py
    pip install tensorboard
    pip install pathos

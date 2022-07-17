@@ -2,6 +2,7 @@ import os
 import subprocess as sp
 
 import argparse
+from pathos.multiprocessing import ProcessingPool as Pool
 
 from deeph import get_preprocess_config, get_rc, get_rh
 
@@ -51,8 +52,11 @@ def main():
     os.makedirs(processed_dir, exist_ok=True)
     os.chdir(processed_dir)
     print(f"Found {len(abspath_list)} directories to preprocess")
-    for index, (abspath, relpath) in enumerate(zip(abspath_list, relpath_list)):
+
+    def worker(index):
         print(f'Preprocessing No. {index + 1}/{len(abspath_list)}...')
+        abspath = abspath_list[index]
+        relpath = relpath_list[index]
         os.makedirs(relpath, exist_ok=True)
         cmd = make_cmd(
             abspath,
@@ -64,9 +68,16 @@ def main():
         assert capture_output.returncode == 0
         get_rc(os.path.abspath(relpath), os.path.abspath(relpath), radius=config.getfloat('graph', 'radius'),
                r2_rand=config.getboolean('graph', 'r2_rand'),
-               create_from_DFT=config.getboolean('graph', 'create_from_DFT'))
+               create_from_DFT=config.getboolean('graph', 'create_from_DFT'), neighbour_file='hamiltonians.h5')
         get_rh(os.path.abspath(relpath), os.path.abspath(relpath), target)
 
+    if config.getboolean('basic', 'multiprocessing'):
+        print('Use multiprocessing')
+        with Pool() as pool:
+            pool.imap(worker, range(len(abspath_list)))
+    else:
+        for index in range(len(abspath_list)):
+            worker(index)
 
 if __name__ == '__main__':
     main()

@@ -24,7 +24,7 @@ The default value can be found in `DeepH-pack/deeph/inference/inference_default.
 
 ## graph
 
-- *radius* : The cut-off radius to create the local coordinate systems.
+- *radius* : The additional cut-off radius for crystal graph created by the truncation that adopted in overlap matrices. `-1.0` means using the same truncation that adopted in overlap matrices.
 
 ## *JSON* configuration file
 

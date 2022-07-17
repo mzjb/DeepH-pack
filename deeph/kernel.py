@@ -78,7 +78,7 @@ class DeepHKernal:
         torch.cuda.empty_cache()
         
         if config.getint('basic', 'num_threads', fallback=-1) == -1:
-            if torch.cuda.device_count() is 0:
+            if torch.cuda.device_count() == 0:
                 torch.set_num_threads(cpu_count(logical=False))
             else:
                 torch.set_num_threads(cpu_count(logical=False) // torch.cuda.device_count())
