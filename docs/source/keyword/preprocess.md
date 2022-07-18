@@ -18,4 +18,4 @@ The default value can be found in `DeepH-pack/deeph/preprocess/preprocess_defaul
 
 ## graph
 
-- *radius* : The additional cut-off radius for crystal graph created by the truncation that adopted in Hamiltonian matrices. `-1.0` means using the same truncation that adopted in Hamiltonian matrices.
+- *radius* : The additional cut-off radius for crystal graph based on the truncation that adopted in Hamiltonian matrices. `-1.0` means using the same truncation that adopted in Hamiltonian matrices.

@@ -112,7 +112,7 @@ function get_local_coordinates(site_positions::Matrix{<:Real}, lat::Matrix{<:Rea
 end
 =#
 
-# come from Hop.jl
+# The function parse_openmx below is come from "https://github.com/HopTB/HopTB.jl"
 function parse_openmx(filepath::String; return_DM::Bool = false)
     # define some helper functions for mixed structure of OpenMX binary data file.
     function multiread(::Type{T}, f, size)::Vector{T} where T
