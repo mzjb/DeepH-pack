@@ -111,13 +111,14 @@ def openmx_parse_overlap(OLP_dir, output_dir, stru_dir):
             orbital_types_f.write('\n')
 
 
-def read_non_parallel_hdf5(name, file_dir, num_p=64):
+def read_non_parallel_hdf5(name, file_dir, num_p=256):
     Os = {}
     for index_p in range(num_p):
         if os.path.exists(os.path.join(file_dir, f"{name}_{index_p}.h5")):
             fid = h5py.File(os.path.join(file_dir, f"{name}_{index_p}.h5"), 'r')
             for key_str, O_nm in fid.items():
                 Os[key_str] = O_nm[...]
+    assert not os.path.exists(os.path.join(file_dir, f"{name}_{num_p}.h5")), "Increase num_p because some overlap files are missing"
     return Os
 
 
