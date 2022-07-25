@@ -1,0 +1,212 @@
+# Script for interface from ABACUS (http://abacus.ustc.edu.cn/) to DeepH-pack
+# Coded by ZC Tang @ Tsinghua Univ. e-mail: az_txycha@126.com
+# Modified by He Li @ Tsinghua Univ.
+# To use this script, please add 'out_hs2    1' in ABACUS INPUT File
+# Current version is capable of coping with f-orbitals, yet is unable to provide interface for spin-polarized or spin-orbit calculations
+# 20220717: Read structure from running_scf.log
+# Note: 20220717 version requires output subdirectory == "OUT.ABACUS"
+
+import os
+import sys
+import json
+import re
+
+import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.linalg import block_diag
+import h5py
+
+
+Bohr2Ang = 0.529177249
+periodic_table = {'Ac': 89, 'Ag': 47, 'Al': 13, 'Am': 95, 'Ar': 18, 'As': 33, 'At': 85, 'Au': 79, 'B': 5, 'Ba': 56,
+                  'Be': 4, 'Bi': 83, 'Bk': 97, 'Br': 35, 'C': 6, 'Ca': 20, 'Cd': 48, 'Ce': 58, 'Cf': 98, 'Cl': 17,
+                  'Cm': 96, 'Co': 27, 'Cr': 24, 'Cs': 55, 'Cu': 29, 'Dy': 66, 'Er': 68, 'Es': 99, 'Eu': 63, 'F': 9,
+                  'Fe': 26, 'Fm': 100, 'Fr': 87, 'Ga': 31, 'Gd': 64, 'Ge': 32, 'H': 1, 'He': 2, 'Hf': 72, 'Hg': 80,
+                  'Ho': 67, 'I': 53, 'In': 49, 'Ir': 77, 'K': 19, 'Kr': 36, 'La': 57, 'Li': 3, 'Lr': 103, 'Lu': 71,
+                  'Md': 101, 'Mg': 12, 'Mn': 25, 'Mo': 42, 'N': 7, 'Na': 11, 'Nb': 41, 'Nd': 60, 'Ne': 10, 'Ni': 28,
+                  'No': 102, 'Np': 93, 'O': 8, 'Os': 76, 'P': 15, 'Pa': 91, 'Pb': 82, 'Pd': 46, 'Pm': 61, 'Po': 84,
+                  'Pr': 59, 'Pt': 78, 'Pu': 94, 'Ra': 88, 'Rb': 37, 'Re': 75, 'Rh': 45, 'Rn': 86, 'Ru': 44, 'S': 16,
+                  'Sb': 51, 'Sc': 21, 'Se': 34, 'Si': 14, 'Sm': 62, 'Sn': 50, 'Sr': 38, 'Ta': 73, 'Tb': 65, 'Tc': 43,
+                  'Te': 52, 'Th': 90, 'Ti': 22, 'Tl': 81, 'Tm': 69, 'U': 92, 'V': 23, 'W': 74, 'Xe': 54, 'Y': 39,
+                  'Yb': 70, 'Zn': 30, 'Zr': 40, 'Rf': 104, 'Db': 105, 'Sg': 106, 'Bh': 107, 'Hs': 108, 'Mt': 109,
+                  'Ds': 110, 'Rg': 111, 'Cn': 112, 'Nh': 113, 'Fl': 114, 'Mc': 115, 'Lv': 116, 'Ts': 117, 'Og': 118}
+
+
+class OrbAbacus2DeepH:
+    def __init__(self):
+        self.Us_abacus2deeph = {}
+        self.Us_abacus2deeph[0] = np.eye(1)
+        self.Us_abacus2deeph[1] = np.eye(3)[[1, 2, 0]]
+        self.Us_abacus2deeph[2] = np.eye(5)[[0, 3, 4, 1, 2]]
+        self.Us_abacus2deeph[3] = np.eye(7)[[0, 1, 2, 3, 4, 5, 6]]
+
+        minus_dict = {
+            1: [0, 1],
+            2: [3, 4],
+            3: [1, 2, 5, 6],
+        }
+        for k, v in minus_dict.items():
+            self.Us_abacus2deeph[k][v] *= -1
+
+    def get_U(self, l):
+        if l > 3:
+            raise NotImplementedError("Only support l = s, p, d, f")
+        return self.Us_abacus2deeph[l]
+
+    def transform(self, mat, l_lefts, l_rights):
+        block_lefts = block_diag(*[self.get_U(l_left) for l_left in l_lefts])
+        block_rights = block_diag(*[self.get_U(l_right) for l_right in l_rights])
+        return block_lefts @ mat @ block_rights.T
+
+
+def parse_ABACUS(input_path, output_path):
+    input_path = os.path.abspath(input_path)
+    output_path = os.path.abspath(output_path)
+    os.makedirs(output_path, exist_ok=True)
+
+    spinful = False # Not implemented yet for spinful calculations
+
+    def find_target_line(f, target):
+        line = f.readline()
+        while line:
+            if target in line:
+                return line
+            line = f.readline()
+        return None
+
+    with open(os.path.join(input_path, "OUT.ABACUS", "running_scf.log"), 'r') as f:
+        f.readline()
+        line = f.readline()
+        assert "WELCOME TO ABACUS" in line
+        assert find_target_line(f, "READING UNITCELL INFORMATION") is not None
+        num_atom_type = int(f.readline().split()[-1])
+
+        assert find_target_line(f, "lattice constant (Bohr)") is not None
+        lattice_constant = float(f.readline().split()[-1]) # unit is Angstrom
+
+        site_norbits_dict = {}
+        orbital_types_dict = {}
+        for index_type in range(num_atom_type):
+            tmp = find_target_line(f, "READING ATOM TYPE")
+            assert tmp is not None
+            assert tmp.split()[-1] == str(index_type + 1)
+            if tmp is None:
+                raise Exception(f"Cannot find ATOM {index_type} in running_scf.log")
+
+            line = f.readline()
+            assert "atom label =" in line
+            atom_type = periodic_table[line.split()[-1]]
+
+            current_site_norbits = 0
+            current_orbital_types = []
+            while True:
+                line = f.readline()
+                if "number of zeta" in line:
+                    tmp = line.split()
+                    L = int(tmp[0][2:-1])
+                    num_L = int(tmp[-1])
+                    current_site_norbits += (2 * L + 1) * num_L
+                    current_orbital_types.extend([L] * num_L)
+                else:
+                    break
+            site_norbits_dict[atom_type] = current_site_norbits
+            orbital_types_dict[atom_type] = current_orbital_types
+
+        line = find_target_line(f, "TOTAL ATOM NUMBER")
+        assert line is not None
+        nsites = int(line.split()[-1])
+
+        assert find_target_line(f, "DIRECT COORDINATES") is not None
+        assert "atom" in f.readline()
+        frac_coords = np.zeros((nsites, 3))
+        site_norbits = np.zeros(nsites, dtype=int)
+        element = np.zeros(nsites, dtype=int)
+        for index_site in range(nsites):
+            line = f.readline()
+            tmp = line.split()
+            assert "taud_" in tmp[0]
+            element_str = ''.join(re.findall(r'[A-Za-z]', tmp[0][5:]))
+            element[index_site] = periodic_table[element_str]
+            site_norbits[index_site] = site_norbits_dict[element[index_site]]
+            frac_coords[index_site, :] = np.array(tmp[1:4])
+        norbits = int(np.sum(site_norbits))
+        site_norbits_cumsum = np.cumsum(site_norbits)
+
+        assert find_target_line(f, "Lattice vectors: (Cartesian coordinate: in unit of a_0)") is not None
+        lattice = np.zeros((3, 3))
+        for index_lat in range(3):
+            lattice[index_lat, :] = np.array(f.readline().split())
+        lattice = lattice * lattice_constant
+
+        line = find_target_line(f, "EFERMI")
+        assert line is not None
+        assert "eV" in line
+        fermi_level = float(line.split()[2])
+        assert find_target_line(f, "EFERMI") is None, "There is more than one EFERMI in the file"
+
+    np.savetxt(os.path.join(output_path, "lat.dat"), np.transpose(lattice))
+    np.savetxt(os.path.join(output_path, "rlat.dat"), np.linalg.inv(lattice) * 2 * np.pi)
+    cart_coords = frac_coords @ lattice
+    np.savetxt(os.path.join(output_path, "site_positions.dat").format(output_path), np.transpose(cart_coords))
+    np.savetxt(os.path.join(output_path, "element.dat"), element, fmt='%d')
+    info = {'nsites' : nsites, 'isorthogonal': False, 'isspinful': spinful, 'norbits': norbits, 'fermi_level': fermi_level}
+    with open('{}/info.json'.format(output_path), 'w') as info_f:
+        json.dump(info, info_f)
+    with open(os.path.join(output_path, "orbital_types.dat"), 'w') as f:
+        for atomic_number in element:
+            for index_l, l in enumerate(orbital_types_dict[atomic_number]):
+                if index_l == 0:
+                    f.write(str(l))
+                else:
+                    f.write(f"  {l}")
+            f.write('\n')
+
+    U_orbital = OrbAbacus2DeepH()
+    def parse_matrix(matrix_path, factor):
+        matrix_dict = dict()
+        with open(matrix_path, 'r') as f:
+            line = f.readline(); f.readline()
+            norbits = int(line.split()[-1])
+            for line in f:
+                line1 = line.split()
+                if len(line1) == 0:
+                    break
+                num_element = int(line1[3])
+                if num_element != 0:
+                    R_cur = np.array(line1[:3]).astype(int)
+                    line2 = f.readline().split()
+                    line3 = f.readline().split()
+                    line4 = f.readline().split()
+                    hamiltonian_cur = csr_matrix((np.array(line2).astype(float), np.array(line3).astype(int),
+                                                  np.array(line4).astype(int)), shape=(norbits, norbits)).toarray()
+                    for index_site_i in range(nsites):
+                        for index_site_j in range(nsites):
+                            key_str = f"[{R_cur[0]}, {R_cur[1]}, {R_cur[2]}, {index_site_i + 1}, {index_site_j + 1}]"
+                            mat = hamiltonian_cur[site_norbits_cumsum[index_site_i]
+                                                  - site_norbits[index_site_i]:site_norbits_cumsum[index_site_i],
+                                  site_norbits_cumsum[index_site_j]
+                                  - site_norbits[index_site_j]:site_norbits_cumsum[index_site_j]]
+                            if abs(mat).max() < 1e-8:
+                                continue
+                            mat = U_orbital.transform(mat, orbital_types_dict[element[index_site_i]],
+                                                      orbital_types_dict[element[index_site_j]])
+                            matrix_dict[key_str] = mat * factor
+        return matrix_dict, norbits
+
+    hamiltonian_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-HR-sparse_SPIN0.csr"), 13.605698) # Ryd2eV
+    assert tmp == norbits
+    overlap_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-SR-sparse_SPIN0.csr"), 1)
+    assert tmp == norbits
+
+    with h5py.File(os.path.join(output_path, "hamiltonians.h5"), 'w') as fid:
+        for key_str, value in hamiltonian_dict.items():
+            fid[key_str] = value
+    with h5py.File(os.path.join(output_path, "overlaps.h5"), 'w') as fid:
+        for key_str, value in overlap_dict.items():
+            fid[key_str] = value
+
+
+if __name__ == '__main__':
+    ABACUS_path = sys.argv[1]
+    output_path = sys.argv[2]
+    parse_ABACUS(ABACUS_path, output_path)

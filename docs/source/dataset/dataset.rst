@@ -35,7 +35,7 @@ One needs to perform the DFT calculation with ABACUS
 to get the Kohn-Sham Hamiltonian output file in the csr
 format. This output file should be placed in a separate
 folder for each structure in the dataset. In order to get
-this binary file, the input file of ABACUS should include
+this csr file, the input file of ABACUS should include
 keywords like this::
 
     out_mat_hs2       1
