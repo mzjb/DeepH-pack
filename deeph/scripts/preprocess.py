@@ -36,6 +36,10 @@ def main():
                 raise ValueError('Unknown target: {}'.format(target))
         elif interface == 'siesta':
             cmd = ''
+        elif interface == 'aims':
+            cmd = f"{julia_interpreter} " \
+                  f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'preprocess', 'aims_get_data.jl')} " \
+                  f"--input_dir {input_dir} --output_dir {output_dir}"
         else:
             raise ValueError('Unknown interface: {}'.format(interface))
         return cmd
@@ -45,7 +49,8 @@ def main():
     abspath_list = []
     for root, dirs, files in os.walk('./'):
         if (interface == 'openmx' and 'openmx.scfout' in files) or (
-                interface == 'siesta' and 'hamiltonians.h5' in files):
+            interface == 'siesta' and 'hamiltonians.h5' in files) or (
+            interface == 'aims' and 'NoTB.dat' in files):
             relpath_list.append(root)
             abspath_list.append(os.path.abspath(root))
 

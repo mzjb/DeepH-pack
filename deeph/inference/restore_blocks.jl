@@ -11,11 +11,11 @@ function parse_commandline()
         "--input_dir", "-i"
             help = "path of block_without_restoration, element.dat, site_positions.dat, orbital_types.dat, and info.json"
             arg_type = String
-            default = "/home/lihe/DeepH/TBG/workflow/6-5/"
+            default = "./"
         "--output_dir", "-o"
             help = "path of output rh_pred.h5"
             arg_type = String
-            default = "/home/lihe/DeepH/TBG/workflow/6-5/"
+            default = "./"
     end
     return parse_args(s)
 end

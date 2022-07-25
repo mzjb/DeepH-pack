@@ -12,12 +12,16 @@ function parse_commandline()
         "--input_dir", "-i"
             help = ""
             arg_type = String
-            default = "raw/openmx_test_inversion"
+            default = "./"
         "--output_dir", "-o"
             help = ""
             arg_type = String
-            default = "processed/openmx_test_inversion"
+            default = "./output"
         "--if_DM", "-d"
+            help = ""
+            arg_type = Bool
+            default = false
+       "--save_overlap", "-s"
             help = ""
             arg_type = Bool
             default = false
@@ -426,9 +430,11 @@ if parsed_args["if_DM"]
         end
     end
 end
-h5open("overlaps.h5", "w") do fid
-    for (key, overlap) in overlaps
-        write(fid, string(key), permutedims(overlap))
+if parsed_args["save_overlap"]
+    h5open("overlaps.h5", "w") do fid
+        for (key, overlap) in overlaps
+            write(fid, string(key), permutedims(overlap))
+        end
     end
 end
 h5open("hamiltonians.h5", "w") do fid

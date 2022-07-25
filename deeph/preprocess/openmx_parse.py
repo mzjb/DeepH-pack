@@ -62,6 +62,8 @@ def openmx_force_intferface(out_file_dir, save_dir=None, return_Etot=False, retu
 
 
 def openmx_parse_overlap(OLP_dir, output_dir, stru_dir):
+    assert os.path.exists(os.path.join(OLP_dir, "output", "overlaps_0.h5")), "No overlap files found"
+
     overlaps = read_non_parallel_hdf5('overlaps', os.path.join(OLP_dir, 'output'))
     assert len(overlaps.keys()) != 0, 'Can not found any overlap file'
     fid = h5py.File(os.path.join(output_dir, 'overlaps.h5'), 'w')
@@ -365,11 +367,11 @@ class GetEEiEij:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Predict Hamiltonian')
     parser.add_argument(
-        '--input_dir', type=str, default='/home/lihe/E_ij/experience/openmx_E_ij/1/output',
+        '--input_dir', type=str, default='./',
         help='path of openmx.out, and output'
     )
     parser.add_argument(
-        '--output_dir', type=str, default='/home/lihe/E_ij/experience/openmx_E_ij/1/E_ij_output',
+        '--output_dir', type=str, default='./',
         help='path of output E_xc_ij.h5, E_delta_ee_ij.h5, site_positions.dat, lat.dat, element.dat, and R_list.dat'
     )
     parser.add_argument('--Ei', action='store_true')

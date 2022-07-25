@@ -10,11 +10,11 @@ function parse_commandline()
         "--input_dir", "-i"
             help = "path of site_positions.dat, lat.dat, element.dat, and R_list.dat (overlaps.h5)"
             arg_type = String
-            default = "/home/lihe/DeepH/TBG/workflow/6-5/"
+            default = "./"
         "--output_dir", "-o"
             help = "path of output rc.h5"
             arg_type = String
-            default = "/home/lihe/DeepH/TBG/workflow/6-5/"
+            default = "./"
         "--radius", "-r"
             help = "cutoff radius"
             arg_type = Float64

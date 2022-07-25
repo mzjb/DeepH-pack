@@ -12,15 +12,14 @@ function parse_commandline()
         "--input_dir", "-i"
             help = "path of rlat.dat, orbital_types.dat, site_positions.dat, hamiltonians_pred.h5, and overlaps.h5"
             arg_type = String
-            default = "/home/lihe/DeepH/TBG/workflow/6-5/"
+            default = "./"
         "--output_dir", "-o"
             help = "path of output openmx.Band"
             arg_type = String
-            default = "/home/lihe/DeepH/TBG/workflow/6-5/"
+            default = "./"
         "--config"
             help = "config file in the format of JSON"
             arg_type = String
-            default = ""
     end
     return parse_args(s)
 end
@@ -109,7 +108,12 @@ else
         begin_time = time()
         for key in collect(keys(hamiltonians_pred))
             hamiltonian_pred = hamiltonians_pred[key]
-            overlap = overlaps[key]
+            if (key ∈ keys(overlaps))
+                overlap = overlaps[key]
+            else
+                # continue
+                overlap = zero(hamiltonian_pred)
+            end
             if spinful
                 overlap = vcat(hcat(overlap,zeros(size(overlap))),hcat(zeros(size(overlap)),overlap)) # the readout overlap matrix only contains the upper-left block # TODO maybe drop the zeros?
             end

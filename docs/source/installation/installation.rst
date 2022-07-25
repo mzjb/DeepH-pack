@@ -103,6 +103,22 @@ OpenMX
    
    openmx
 
+ABACUS
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   abacus
+
+FHI-aims
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   aims
+
 SIESTA
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -111,10 +127,3 @@ SIESTA
 
    siesta
 
-ABACUS
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 1
-   
-   abacus

@@ -28,14 +28,27 @@ means to run::
 
    cat openmx.out >> openmx.scfout
 
+Using ABACUS
+^^^^^^^^^^^^^^^^^^^^^^^^
 
+One needs to perform the DFT calculation with ABACUS
+to get the Kohn-Sham Hamiltonian output file in the csr
+format. This output file should be placed in a separate
+folder for each structure in the dataset. In order to get
+this binary file, the input file of ABACUS should include
+keywords like this::
+
+    out_mat_hs2       1
+
+Using FHI-aims
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+One needs to perform the DFT calculation with modified FHI-aims
+to get the Kohn-Sham Hamiltonian output file in text
+format. This output file should be placed in a separate
+folder for each structure in the dataset.
 
 Using SIESTA
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 DeepH-pack will support SIESTA soon.
-
-Using ABACUS
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-DeepH-pack will support ABACUS soon.

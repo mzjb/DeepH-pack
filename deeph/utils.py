@@ -194,7 +194,7 @@ def get_preprocess_config(*args):
     for config_file in args:
         config.read(config_file)
     assert config['basic']['target'] in ['hamiltonian', 'density_matrix', 'phiVdphi']
-    assert config['basic']['interface'] in ['openmx', 'siesta']
+    assert config['basic']['interface'] in ['openmx', 'siesta', 'aims']
     assert config['basic']['multiprocessing'] in ['False'], 'multiprocessing is not yet implemented'
 
     return config
