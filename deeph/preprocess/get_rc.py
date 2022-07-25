@@ -75,10 +75,10 @@ def get_rc(input_dir, output_dir, radius, r2_rand=False, gen_rc_idx=False, gen_r
     rc_dict = {}
     if gen_rc_idx:
         assert r2_rand is False, 'r2_rand must be False when gen_rc_idx is True'
-        assert gen_rc_by_idx is "", 'gen_rc_by_idx must be "" when gen_rc_idx is True'
+        assert gen_rc_by_idx == "", 'gen_rc_by_idx must be "" when gen_rc_idx is True'
         rc_idx_dict = {}
     neighbours_dict = {}
-    if gen_rc_by_idx is not "":
+    if gen_rc_by_idx != "":
         print(f'get local coordinate using {os.path.join(gen_rc_by_idx, "rc_idx.h5")} from: {input_dir}')
         assert os.path.exists(os.path.join(gen_rc_by_idx, "rc_idx.h5")), 'Atomic indices for constructing rc rc_idx.h5 is not found in {}'.format(gen_rc_by_idx)
         fid_rc_idx = h5py.File(os.path.join(gen_rc_by_idx, "rc_idx.h5"), 'r')

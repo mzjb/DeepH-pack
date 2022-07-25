@@ -495,45 +495,75 @@ class DeepHKernal:
         assert len(revert_decay_epoch) == len(revert_decay_gamma)
         lr_step_num = len(revert_decay_epoch)
 
-        for epoch in range(self.config.getint('train', 'epochs')):
-            if self.config.getboolean('train', 'switch_sgd') and epoch == self.config.getint('train', 'switch_sgd_epoch'):
-                model_parameters = filter(lambda p: p.requires_grad, self.model.parameters())
-                self.optimizer = optim.SGD(model_parameters, lr=self.config.getfloat('train', 'switch_sgd_lr'))
-                print(f"Switch to sgd (epoch: {epoch})")
+        try:
+            for epoch in range(self.config.getint('train', 'epochs')):
+                if self.config.getboolean('train', 'switch_sgd') and epoch == self.config.getint('train', 'switch_sgd_epoch'):
+                    model_parameters = filter(lambda p: p.requires_grad, self.model.parameters())
+                    self.optimizer = optim.SGD(model_parameters, lr=self.config.getfloat('train', 'switch_sgd_lr'))
+                    print(f"Switch to sgd (epoch: {epoch})")
 
-            learning_rate = self.optimizer.param_groups[0]['lr']
-            if self.if_tensorboard:
-                self.tb_writer.add_scalar('Learning rate', learning_rate, global_step=epoch)
+                learning_rate = self.optimizer.param_groups[0]['lr']
+                if self.if_tensorboard:
+                    self.tb_writer.add_scalar('Learning rate', learning_rate, global_step=epoch)
 
-            # train
-            train_losses = self.kernel_fn(train_loader, 'TRAIN')
-            if self.if_tensorboard:
-                self.tb_writer.add_scalars('loss', {'Train loss': train_losses.avg}, global_step=epoch)
+                # train
+                train_losses = self.kernel_fn(train_loader, 'TRAIN')
+                if self.if_tensorboard:
+                    self.tb_writer.add_scalars('loss', {'Train loss': train_losses.avg}, global_step=epoch)
 
-            # val
-            with torch.no_grad():
-                val_losses = self.kernel_fn(val_loader, 'VAL')
-            if val_losses.avg > self.config.getfloat('train', 'revert_threshold') * self.best_val_loss:
-                print(f'Epoch #{epoch:01d} \t| '
-                      f'Learning rate: {learning_rate:0.2e} \t| '
-                      f'Epoch time: {time.time() - begin_time:.2f} \t| '
-                      f'Train loss: {train_losses.avg:.8f} \t| '
-                      f'Val loss: {val_losses.avg:.8f} \t| '
-                      f'Best val loss: {self.best_val_loss:.8f}.'
-                      )
-                best_checkpoint = torch.load(os.path.join(self.config.get('basic', 'save_dir'), 'best_state_dict.pkl'))
-                self.model.load_state_dict(best_checkpoint['state_dict'])
-                self.optimizer.load_state_dict(best_checkpoint['optimizer_state_dict'])
-                if self.config.getboolean('train', 'revert_then_decay'):
-                    if lr_step < lr_step_num:
-                        for param_group in self.optimizer.param_groups:
-                            param_group['lr'] = learning_rate * revert_decay_gamma[lr_step]
-                        lr_step += 1
+                # val
                 with torch.no_grad():
                     val_losses = self.kernel_fn(val_loader, 'VAL')
-                print(f"Revert (threshold: {self.config.getfloat('train', 'revert_threshold')}) to epoch {best_checkpoint['epoch']} \t| Val loss: {val_losses.avg:.8f}")
+                if val_losses.avg > self.config.getfloat('train', 'revert_threshold') * self.best_val_loss:
+                    print(f'Epoch #{epoch:01d} \t| '
+                          f'Learning rate: {learning_rate:0.2e} \t| '
+                          f'Epoch time: {time.time() - begin_time:.2f} \t| '
+                          f'Train loss: {train_losses.avg:.8f} \t| '
+                          f'Val loss: {val_losses.avg:.8f} \t| '
+                          f'Best val loss: {self.best_val_loss:.8f}.'
+                          )
+                    best_checkpoint = torch.load(os.path.join(self.config.get('basic', 'save_dir'), 'best_state_dict.pkl'))
+                    self.model.load_state_dict(best_checkpoint['state_dict'])
+                    self.optimizer.load_state_dict(best_checkpoint['optimizer_state_dict'])
+                    if self.config.getboolean('train', 'revert_then_decay'):
+                        if lr_step < lr_step_num:
+                            for param_group in self.optimizer.param_groups:
+                                param_group['lr'] = learning_rate * revert_decay_gamma[lr_step]
+                            lr_step += 1
+                    with torch.no_grad():
+                        val_losses = self.kernel_fn(val_loader, 'VAL')
+                    print(f"Revert (threshold: {self.config.getfloat('train', 'revert_threshold')}) to epoch {best_checkpoint['epoch']} \t| Val loss: {val_losses.avg:.8f}")
+                    if self.if_tensorboard:
+                        self.tb_writer.add_scalars('loss', {'Validation loss': val_losses.avg}, global_step=epoch)
+
+                    if self.config.get('hyperparameter', 'lr_scheduler') == 'MultiStepLR':
+                        self.scheduler.step()
+                    elif self.config.get('hyperparameter', 'lr_scheduler') == 'ReduceLROnPlateau':
+                        self.scheduler.step(val_losses.avg)
+                    elif self.config.get('hyperparameter', 'lr_scheduler') == 'CyclicLR':
+                        self.scheduler.step()
+                    continue
                 if self.if_tensorboard:
                     self.tb_writer.add_scalars('loss', {'Validation loss': val_losses.avg}, global_step=epoch)
+
+                if self.config.getboolean('train', 'revert_then_decay'):
+                    if lr_step < lr_step_num and epoch >= revert_decay_epoch[lr_step]:
+                        for param_group in self.optimizer.param_groups:
+                            param_group['lr'] *= revert_decay_gamma[lr_step]
+                        lr_step += 1
+
+                is_best = val_losses.avg < self.best_val_loss
+                self.best_val_loss = min(val_losses.avg, self.best_val_loss)
+
+                save_model({
+                    'epoch': epoch + 1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                    'best_val_loss': self.best_val_loss,
+                    'spinful': self.spinful,
+                    'Z_to_index': self.Z_to_index,
+                    'index_to_Z': self.index_to_Z,
+                }, {'model': self.model}, {'state_dict': self.model.state_dict()},
+                    path=self.config.get('basic', 'save_dir'), is_best=is_best)
 
                 if self.config.get('hyperparameter', 'lr_scheduler') == 'MultiStepLR':
                     self.scheduler.step()
@@ -541,52 +571,25 @@ class DeepHKernal:
                     self.scheduler.step(val_losses.avg)
                 elif self.config.get('hyperparameter', 'lr_scheduler') == 'CyclicLR':
                     self.scheduler.step()
-                continue
-            if self.if_tensorboard:
-                self.tb_writer.add_scalars('loss', {'Validation loss': val_losses.avg}, global_step=epoch)
 
-            if self.config.getboolean('train', 'revert_then_decay'):
-                if lr_step < lr_step_num and epoch >= revert_decay_epoch[lr_step]:
-                    for param_group in self.optimizer.param_groups:
-                        param_group['lr'] *= revert_decay_gamma[lr_step]
-                    lr_step += 1
+                print(f'Epoch #{epoch:01d} \t| '
+                      f'Learning rate: {learning_rate:0.2e} \t| '
+                      f'Epoch time: {time.time() - begin_time:.2f} \t| '
+                      f'Train loss: {train_losses.avg:.8f} \t| '
+                      f'Val loss: {val_losses.avg:.8f} \t| '
+                      f'Best val loss: {self.best_val_loss:.8f}.'
+                      )
 
-            is_best = val_losses.avg < self.best_val_loss
-            self.best_val_loss = min(val_losses.avg, self.best_val_loss)
+                if val_losses.avg < self.config.getfloat('train', 'early_stopping_loss'):
+                    print(f"Early stopping because the target accuracy (validation loss < {self.config.getfloat('train', 'early_stopping_loss')}) is achieved at eopch #{epoch:01d}")
+                    break
+                if epoch > self.early_stopping_loss_epoch[1] and val_losses.avg < self.early_stopping_loss_epoch[0]:
+                    print(f"Early stopping because the target accuracy (validation loss < {self.early_stopping_loss_epoch[0]} and epoch > {self.early_stopping_loss_epoch[1]}) is achieved at eopch #{epoch:01d}")
+                    break
 
-            save_model({
-                'epoch': epoch + 1,
-                'optimizer_state_dict': self.optimizer.state_dict(),
-                'best_val_loss': self.best_val_loss,
-                'spinful': self.spinful,
-                'Z_to_index': self.Z_to_index,
-                'index_to_Z': self.index_to_Z,
-            }, {'model': self.model}, {'state_dict': self.model.state_dict()},
-                path=self.config.get('basic', 'save_dir'), is_best=is_best)
-
-            if self.config.get('hyperparameter', 'lr_scheduler') == 'MultiStepLR':
-                self.scheduler.step()
-            elif self.config.get('hyperparameter', 'lr_scheduler') == 'ReduceLROnPlateau':
-                self.scheduler.step(val_losses.avg)
-            elif self.config.get('hyperparameter', 'lr_scheduler') == 'CyclicLR':
-                self.scheduler.step()
-
-            print(f'Epoch #{epoch:01d} \t| '
-                  f'Learning rate: {learning_rate:0.2e} \t| '
-                  f'Epoch time: {time.time() - begin_time:.2f} \t| '
-                  f'Train loss: {train_losses.avg:.8f} \t| '
-                  f'Val loss: {val_losses.avg:.8f} \t| '
-                  f'Best val loss: {self.best_val_loss:.8f}.'
-                  )
-
-            if val_losses.avg < self.config.getfloat('train', 'early_stopping_loss'):
-                print(f"Early stopping because the target accuracy (validation loss < {self.config.getfloat('train', 'early_stopping_loss')}) is achieved at eopch #{epoch:01d}")
-                break
-            if epoch > self.early_stopping_loss_epoch[1] and val_losses.avg < self.early_stopping_loss_epoch[0]:
-                print(f"Early stopping because the target accuracy (validation loss < {self.early_stopping_loss_epoch[0]} and epoch > {self.early_stopping_loss_epoch[1]}) is achieved at eopch #{epoch:01d}")
-                break
-
-            begin_time = time.time()
+                begin_time = time.time()
+        except KeyboardInterrupt:
+            print('\nKeyboardInterrupt')
 
         print('---------Evaluate Model on Test Set---------------')
         best_checkpoint = torch.load(os.path.join(self.config.get('basic', 'save_dir'), 'best_state_dict.pkl'))

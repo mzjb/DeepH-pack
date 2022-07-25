@@ -18,7 +18,7 @@ from scipy.special import comb
 from .from_se3_transformer import SphericalHarmonics
 from .from_schnetpack import GaussianBasis
 from .from_PyG_future import GraphNorm, DiffGroupNorm
-from .from_wangzun import RBF, cosine_cutoff, ShiftedSoftplus, _eps
+from .from_HermNet import RBF, cosine_cutoff, ShiftedSoftplus, _eps
 
 
 class ExpBernsteinBasis(nn.Module):
