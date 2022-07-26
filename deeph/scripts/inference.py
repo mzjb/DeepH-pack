@@ -45,9 +45,15 @@ def main():
         cmd3_post = f"{julia_interpreter} " \
                     f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'restore_blocks.jl')} " \
                     f"--input_dir {work_dir} --output_dir {work_dir}"
-    cmd5 = f"{julia_interpreter} " \
-           f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'sparse_calc.jl')} " \
-           f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
+
+    if config.getboolean('basic', 'dense_calc'):
+        cmd5 = f"{julia_interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'dense_calc.jl')} " \
+               f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
+    else:
+        cmd5 = f"{julia_interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'sparse_calc.jl')} " \
+               f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
 
     print(f"\n~~~~~~~ 1.parse_Overlap\n")
     print(f"\n~~~~~~~ 2.get_local_coordinate\n")

@@ -63,9 +63,9 @@ The default value can be found in `DeepH-pack/deeph/default.ini`. The following 
 
 - *epochs* : The number of passes of the entire training dataset the  learning algorithm has completed.
 
-+ *pretrained* : The path to the pretrained model.
++ *pretrained* : The path to the pretrained model, e.g. `/your/pretrained/model/best_state_dict.pkl`.
 
-- *resume* : The path to the half-trained model.
+- *resume* : The path to the half-trained model, e.g. `/your/half_trained/model/best_state_dict.pkl`.
 
 + *train_ratio* : The ratio of training data.
 

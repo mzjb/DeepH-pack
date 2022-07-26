@@ -92,8 +92,8 @@ Install one of the supported DFT packages
 ------------------------------------------------
 
 One of the supported DFT packages is required to obtain the dataset.
-The DeepH-pack only supports DFT results made by OpenMX for now and 
-will support SIESTA and ABACUS soon.
+The DeepH-pack supports DFT results made by OpenMX, ABACUS or FHI-aims
+and will support SIESTA soon.
 
 OpenMX
 ^^^^^^^^^^^^^^^^^^^^^^^^
