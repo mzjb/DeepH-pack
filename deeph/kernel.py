@@ -752,10 +752,14 @@ class DeepHKernal:
                     if self.criterion_name == 'MaskMSELoss':
                         se_each_out = torch.pow(output - label.to(self.device), 2)
                         for index_out, losses_each_out_for in enumerate(losses_each_out):
-                            losses_each_out_for.update(
-                                torch.masked_select(se_each_out[:, index_out], mask[:, index_out]).mean().item(),
-                                mask[:, index_out].sum().item()
-                            )
+                            count = mask[:, index_out].sum().item()
+                            if count == 0:
+                                losses_each_out_for.update(-1, 1)
+                            else:
+                                losses_each_out_for.update(
+                                    torch.masked_select(se_each_out[:, index_out], mask[:, index_out]).mean().item(),
+                                    count
+                                )
             if task == 'TEST':
                 if self.target == "E_ij":
                     test_targets += torch.squeeze(label_Ei.detach().cpu()).tolist()
