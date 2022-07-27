@@ -157,7 +157,7 @@ function parse_openmx(filepath::String; return_DM::Bool = false)
 
     f = open(filepath)
     atomnum, SpinP_switch, Catomnum, Latomnum, Ratomnum, TCpyCell, order_max = bound_multiread(7)
-    @assert (SpinP_switch >> 2) == 3
+    @assert (SpinP_switch >> 2) == 3 "DeepH-pack only supports OpenMX v3.9. Please check your OpenMX version"
     SpinP_switch &= 0x03
 
     atv, atv_ijk = bound_read_3d_vecs.([Float64,Int32], TCpyCell + 1)

@@ -38,6 +38,7 @@ setup(
     },
     install_requires=[
         "numpy",
+        "scipy",
         "torch>=1.9",
         "torch_geometric==1.7.2",
         "e3nn>=0.3.5",

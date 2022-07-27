@@ -42,6 +42,7 @@ To use the DeepH-pack, following environments and packages are required：
 ### Python
 Prepare the Python 3.9 interpreter. Install the following Python packages required:
 - NumPy
+- SciPy
 - PyTorch = 1.9.1
 - PyTorch Geometric = 1.7.2
 - e3nn = 0.3.5
@@ -108,7 +109,7 @@ Then enter the pkg REPL by pressing `]` from the Julia REPL. In the pkg REPL run
 ```
 
 ### OpenMX
-Install [OpenMX package](http://www.openmx-square.org/download.html) for density functional theory Hamiltonian matrix calculation to construct datasets.
+Install [OpenMX package version 3.9](http://www.openmx-square.org/download.html) for density functional theory Hamiltonian matrix calculation to construct datasets.
 
 ### 'overlap only' OpenMX
 A modified OpenMX package is also used to compute overlap matrices only for large-scale materials structure. Install 'overlap only' OpenMX according to the *readme* document in this [repository](https://github.com/mzjb/overlap-only-OpenMX).

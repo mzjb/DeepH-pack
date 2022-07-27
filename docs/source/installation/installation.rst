@@ -12,6 +12,7 @@ Python packages
 Prepare the Python 3.9 interpreter. Install the following Python packages required:
 
 * NumPy
+* SciPy
 * PyTorch = 1.9.1
 * PyTorch Geometric = 1.7.2
 * e3nn = 0.3.5
