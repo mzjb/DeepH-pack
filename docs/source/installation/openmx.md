@@ -10,4 +10,4 @@ LIB = ${CMPLR_ROOT}/linux/compiler/lib/intel64_lin/libiomp5.a ${MKLROOT}/lib/int
 Or edit the makefile yourself according to your environment to install OpenMX version 3.9.
 
 # 'overlap only' OpenMX
-A modified OpenMX package is also used to compute overlap matrices only for large-scale materials structure. Install 'overlap only' OpenMX according to the *readme* document in this [repository](https://github.com/mzjb/overlap-only-OpenMX).
+A modified OpenMX package is also used to compute overlap matrices only for large-scale materials structure. Install 'overlap only' OpenMX according to the *readme* documentation in this [repository](https://github.com/mzjb/overlap-only-OpenMX).

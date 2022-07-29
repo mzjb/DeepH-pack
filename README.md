@@ -120,6 +120,13 @@ and will support SIESTA soon.
     [ABACUS version >= 2.3.2](https://github.com/deepmodeling/abacus-develop/releases/tag/v2.3.2).
 2. **OpenMX**:
     1. Install [OpenMX package version 3.9](http://www.openmx-square.org/download.html) for density functional theory Hamiltonian matrix calculation to construct datasets.
+        If you are using Intel MKL and Intel MPI environments, you can use the following variable definitions for makefile
+        ```
+        CC = mpiicc -O3 -xHOST -ip -no-prec-div -qopenmp -I${MKLROOT}/include/fftw -I${MKLROOT}/include
+        FC = mpiifort -O3 -xHOST -ip -no-prec-div -qopenmp -I${MKLROOT}/include
+        LIB = ${CMPLR_ROOT}/linux/compiler/lib/intel64_lin/libiomp5.a ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group ${CMPLR_ROOT}/linux/compiler/lib/intel64_lin/libifcoremt.a -lpthread -lm -ldl
+        ```
+        Or edit the makefile yourself according to your environment to install OpenMX version 3.9.
     2. A modified OpenMX package is also used to compute overlap matrices only for large-scale materials structure. Install 'overlap only' OpenMX according to the *readme* documentation in this [repository](https://github.com/mzjb/overlap-only-OpenMX).
 ## Usage
 
@@ -186,9 +193,33 @@ Tips:
   in the output directory (*save_dir*):
 
 ### Inference with your model
-`Inference` is a part of DeepH-pack, which is used to predict the DFT Hamiltonian for large-scale material structures and perform sparse calculation of physical properties.
+`Inference` is a part of DeepH-pack, which is used to predict the 
+DFT Hamiltonian for large-scale material structures and perform 
+sparse calculation of physical properties.
 
-Firstly, one should prepare the structure file of large-scale material and calculate the overlap matrix with 'overlap only' OpenMX. Then, prepare a configuration in the format of *ini*, setting up the file referring to the default `DeepH-pack/deeph/inference/inference_default.ini`. The meaning of the keywords can be found in the [documentation](https://deeph-pack.readthedocs.io/en/latest/keyword/inference.html). For a quick start, you must set up *OLP_dir*, *work_dir*, *trained_model_dir*, *sparse_calc_config* and *processed_dir*, as well as a *JSON* configuration file located at *sparse_calc_config* for sparse calculation.
+Firstly, one should prepare the structure file of large-scale material 
+and calculate the overlap matrix. Overlap matrix calculation does not
+require `SCF`. Even if the material system is large, only a small calculation
+time and memory consumption are required. Following are the steps to
+calculate the overlap matrix using different supported DFT packages:
+1. **ABACUS**: Set the following parameters in the input file of ABACUS `INPUT`:
+    ```
+    calculation   get_S
+    ```
+    and run ABACUS like a normal `SCF` calculation.
+    [ABACUS version >= 2.3.2](https://github.com/deepmodeling/abacus-develop/releases/tag/v2.3.2) is required.
+2. **OpenMX**: See this [repository](https://github.com/mzjb/overlap-only-OpenMX#usage).
+
+For overlap matrix calculation, you need to use the same basis set and DFT
+software when preparing the dataset.
+
+Then, prepare a configuration in the format of *ini*, setting up the 
+file referring to the default `DeepH-pack/deeph/inference/inference_default.ini`. 
+The meaning of the keywords can be found in the
+[INPUT KEYWORDS section](https://deeph-pack.readthedocs.io/en/latest/keyword/inference.html). 
+For a quick start, you must set up *OLP_dir*, *work_dir*, 
+*trained_model_dir* and *sparse_calc_config*, as well as a *JSON* 
+configuration file located at *sparse_calc_config* for sparse calculation.
 
 With the configuration files prepared, run 
 ```bash
