@@ -59,7 +59,7 @@ class OrbAbacus2DeepH:
         return block_lefts @ mat @ block_rights.T
 
 
-def parse_ABACUS(input_path, output_path):
+def parse_ABACUS(input_path, output_path, only_S=False):
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     os.makedirs(output_path, exist_ok=True)
@@ -73,12 +73,15 @@ def parse_ABACUS(input_path, output_path):
                 return line
             line = f.readline()
         return None
-
-    with open(os.path.join(input_path, "OUT.ABACUS", "running_scf.log"), 'r') as f:
+    if only_S:
+        log_file_name = "running_get_S.log"
+    else:
+        log_file_name = "running_scf.log"
+    with open(os.path.join(input_path, "OUT.ABACUS", log_file_name), 'r') as f:
         f.readline()
         line = f.readline()
         assert "WELCOME TO ABACUS" in line
-        assert find_target_line(f, "READING UNITCELL INFORMATION") is not None
+        assert find_target_line(f, "READING UNITCELL INFORMATION") is not None, 'Cannot find "READING UNITCELL INFORMATION" in log file'
         num_atom_type = int(f.readline().split()[-1])
 
         assert find_target_line(f, "lattice constant (Bohr)") is not None
@@ -88,14 +91,16 @@ def parse_ABACUS(input_path, output_path):
         orbital_types_dict = {}
         for index_type in range(num_atom_type):
             tmp = find_target_line(f, "READING ATOM TYPE")
-            assert tmp is not None
+            assert tmp is not None, 'Cannot find "ATOM TYPE" in log file'
             assert tmp.split()[-1] == str(index_type + 1)
             if tmp is None:
-                raise Exception(f"Cannot find ATOM {index_type} in running_scf.log")
+                raise Exception(f"Cannot find ATOM {index_type} in {log_file_name}")
 
             line = f.readline()
             assert "atom label =" in line
-            atom_type = periodic_table[line.split()[-1]]
+            atom_label = line.split()[-1]
+            assert atom_label in periodic_table, "Atom label should be in periodic table"
+            atom_type = periodic_table[atom_label]
 
             current_site_norbits = 0
             current_orbital_types = []
@@ -113,10 +118,10 @@ def parse_ABACUS(input_path, output_path):
             orbital_types_dict[atom_type] = current_orbital_types
 
         line = find_target_line(f, "TOTAL ATOM NUMBER")
-        assert line is not None
+        assert line is not None, 'Cannot find "TOTAL ATOM NUMBER" in log file'
         nsites = int(line.split()[-1])
 
-        assert find_target_line(f, "DIRECT COORDINATES") is not None
+        assert find_target_line(f, "DIRECT COORDINATES") is not None, 'Cannot find "DIRECT COORDINATES" in log file'
         assert "atom" in f.readline()
         frac_coords = np.zeros((nsites, 3))
         site_norbits = np.zeros(nsites, dtype=int)
@@ -125,8 +130,9 @@ def parse_ABACUS(input_path, output_path):
             line = f.readline()
             tmp = line.split()
             assert "taud_" in tmp[0]
-            element_str = ''.join(re.findall(r'[A-Za-z]', tmp[0][5:]))
-            element[index_site] = periodic_table[element_str]
+            atom_label = ''.join(re.findall(r'[A-Za-z]', tmp[0][5:]))
+            assert atom_label in periodic_table, "Atom label should be in periodic table"
+            element[index_site] = periodic_table[atom_label]
             site_norbits[index_site] = site_norbits_dict[element[index_site]]
             frac_coords[index_site, :] = np.array(tmp[1:4])
         norbits = int(np.sum(site_norbits))
@@ -138,11 +144,14 @@ def parse_ABACUS(input_path, output_path):
             lattice[index_lat, :] = np.array(f.readline().split())
         lattice = lattice * lattice_constant
 
-        line = find_target_line(f, "EFERMI")
-        assert line is not None
-        assert "eV" in line
-        fermi_level = float(line.split()[2])
-        assert find_target_line(f, "EFERMI") is None, "There is more than one EFERMI in the file"
+        if only_S:
+            fermi_level = 0.0
+        else:
+            line = find_target_line(f, "EFERMI")
+            assert line is not None, 'Cannot find "EFERMI" in log file'
+            assert "eV" in line
+            fermi_level = float(line.split()[2])
+            assert find_target_line(f, "EFERMI") is None, "There is more than one EFERMI in log file"
 
     np.savetxt(os.path.join(output_path, "lat.dat"), np.transpose(lattice))
     np.savetxt(os.path.join(output_path, "rlat.dat"), np.linalg.inv(lattice) * 2 * np.pi)
@@ -193,14 +202,19 @@ def parse_ABACUS(input_path, output_path):
                             matrix_dict[key_str] = mat * factor
         return matrix_dict, norbits
 
-    hamiltonian_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-HR-sparse_SPIN0.csr"), 13.605698) # Ryd2eV
-    assert tmp == norbits
-    overlap_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-SR-sparse_SPIN0.csr"), 1)
-    assert tmp == norbits
+    if only_S:
+        overlap_dict, tmp = parse_matrix(os.path.join(input_path, "SR.csr"), 1)
+        assert tmp == norbits
+    else:
+        hamiltonian_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-HR-sparse_SPIN0.csr"), 13.605698) # Ryd2eV
+        assert tmp == norbits
+        overlap_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-SR-sparse_SPIN0.csr"), 1)
+        assert tmp == norbits
 
-    with h5py.File(os.path.join(output_path, "hamiltonians.h5"), 'w') as fid:
-        for key_str, value in hamiltonian_dict.items():
-            fid[key_str] = value
+    if not only_S:
+        with h5py.File(os.path.join(output_path, "hamiltonians.h5"), 'w') as fid:
+            for key_str, value in hamiltonian_dict.items():
+                fid[key_str] = value
     with h5py.File(os.path.join(output_path, "overlaps.h5"), 'w') as fid:
         for key_str, value in overlap_dict.items():
             fid[key_str] = value
@@ -209,4 +223,11 @@ def parse_ABACUS(input_path, output_path):
 if __name__ == '__main__':
     ABACUS_path = sys.argv[1]
     output_path = sys.argv[2]
-    parse_ABACUS(ABACUS_path, output_path)
+    if len(sys.argv) == 3:
+        only_S = False
+    elif len(sys.argv) == 4:
+        only_S = bool(int(sys.argv[3]))
+    else:
+        raise ValueError("Wrong number of arguments")
+    print("only_S: {}".format(only_S))
+    parse_ABACUS(ABACUS_path, output_path, only_S)

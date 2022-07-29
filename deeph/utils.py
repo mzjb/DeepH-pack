@@ -184,6 +184,7 @@ def get_inference_config(*args):
     config.read(os.path.join(os.path.dirname(__file__), 'inference', 'inference_default.ini'))
     for config_file in args:
         config.read(config_file)
+    assert config['basic']['interface'] in ['openmx', 'abacus']
 
     return config
 

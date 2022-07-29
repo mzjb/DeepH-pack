@@ -5,7 +5,7 @@ import json
 
 import argparse
 
-from deeph import get_inference_config, rotate_back
+from deeph import get_inference_config, rotate_back, parse_ABACUS
 from deeph.preprocess import openmx_parse_overlap, get_rc
 from deeph.inference import predict, predict_with_grad
 
@@ -20,6 +20,7 @@ def main():
 
     work_dir = os.path.abspath(config.get('basic', 'work_dir'))
     OLP_dir = os.path.abspath(config.get('basic', 'OLP_dir'))
+    interface = config.get('basic', 'interface')
     structure_file_name = config.get('basic', 'structure_file_name')
     task = json.loads(config.get('basic', 'task'))
     assert isinstance(task, list)
@@ -66,14 +67,16 @@ def main():
     if 1 in task:
         begin = time.time()
         print(f"\n####### Begin 1.parse_Overlap")
-        openmx_parse_overlap(OLP_dir, work_dir, os.path.join(OLP_dir, structure_file_name))
+        if interface == 'openmx':
+            openmx_parse_overlap(OLP_dir, work_dir, os.path.join(OLP_dir, structure_file_name))
+        elif interface == 'abacus':
+            parse_ABACUS(OLP_dir, work_dir, only_S=True)
         assert os.path.exists(os.path.join(work_dir, "overlaps.h5"))
         assert os.path.exists(os.path.join(work_dir, "lat.dat"))
         assert os.path.exists(os.path.join(work_dir, "rlat.dat"))
         assert os.path.exists(os.path.join(work_dir, "site_positions.dat"))
         assert os.path.exists(os.path.join(work_dir, "orbital_types.dat"))
         assert os.path.exists(os.path.join(work_dir, "element.dat"))
-        assert os.path.exists(os.path.join(work_dir, "R_list.dat"))
         print('\n******* Finish 1.parse_Overlap, cost %d seconds\n' % (time.time() - begin))
 
     if not with_grad and 2 in task:
