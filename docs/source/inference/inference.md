@@ -24,8 +24,8 @@ Then, prepare a configuration in the format of *ini*, setting up the
 file referring to the default `DeepH-pack/deeph/inference/inference_default.ini`. 
 The meaning of the keywords can be found in the
 [INPUT KEYWORDS section](https://deeph-pack.readthedocs.io/en/latest/keyword/inference.html). 
-For a quick start, you must set up *OLP_dir*, *work_dir*, 
-*trained_model_dir* and *sparse_calc_config*, as well as a *JSON* 
+For a quick start, you must set up *OLP_dir*, *work_dir*, *interface*,
+*trained_model_dir* and *sparse_calc_config*, as well as a `JSON` 
 configuration file located at *sparse_calc_config* for sparse calculation.
 
 With the configuration files prepared, run 

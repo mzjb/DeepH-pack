@@ -8,7 +8,7 @@ The default value can be found in `DeepH-pack/deeph/preprocess/preprocess_defaul
 
 + *processed_dir* : The path to the root directory to save the preprocessed files. A subdirectory will be created to save the corresponding files for each piece of data. This argument can have the same value as *raw_dir*, when the preprocessed files will be created in the same directory as the corresponding `openmx.scfout` in.
 
-- *interface* : Which DFT package is used to get the Hamiltonian. Support `openmx`, `abacus` and `aims`.
+- *interface* : Which DFT package is used to get the Hamiltonian. Support `abacus`, `openmx` and `aims`.
 
 + *multiprocessing* : Whether to use multiprocessing to perform `Preprocess` for different data.
 

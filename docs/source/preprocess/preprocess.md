@@ -16,7 +16,7 @@ You need to edit a configuration in the format of *ini*, setting
 up the file referring to the default file 
 `DeepH-pack/deeph/preprocess/preprocess_default.ini`. The meaning 
 of the keywords can be found in the [INPUT KEYWORDS section](https://deeph-pack.readthedocs.io/en/latest/keyword/preprocess.html). 
-For a quick start, you must set up *raw_dir* and *processed_dir*.
+For a quick start, you must set up *raw_dir*, *processed_dir* and *interface*.
 
 With the configuration file prepared, run 
 ```bash

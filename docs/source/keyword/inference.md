@@ -8,17 +8,19 @@ The default value can be found in `DeepH-pack/deeph/inference/inference_default.
 
 + *work_dir* : The directory to run the workflow and save the results.
 
-- *trained_model_dir* : The directory to the trained model. If only one model is used for the current material system, fill in the string of the directory to the trained model, e.g. `/your/trained/model`. If multiple models are used for the current material system, fill in the JSON format string containing all the directories of models, e.g. `["/your/trained/model1", "/your/trained/model2"]`.
+- *interface* : Which DFT package is used to get the overlap matrix. Support `abacus` and `openmx`.
 
-+ *task* : Set it `[1, 2, 3, 4, 5]` to run all the tasks for inference. `1` in list means to parse the overlap, `2` means to get the local coordinate, `3` means to predict the Hamiltonian, `4` means to rotate the Hamiltonian back, and `5` means to perform the sparse calculation.
++ *trained_model_dir* : The directory to the trained model. If only one model is used for the current material system, fill in the string of the directory to the trained model, e.g. `/your/trained/model`. If multiple models are used for the current material system, fill in the JSON format string containing all the directories of models, e.g. `["/your/trained/model1", "/your/trained/model2"]`.
 
-- *sparse_calc_config* : The directory to the *JSON* configuration file.
+- *task* : Set it `[1, 2, 3, 4, 5]` to run all the tasks for inference. `1` in list means to parse the overlap, `2` means to get the local coordinate, `3` means to predict the Hamiltonian, `4` means to rotate the Hamiltonian back, and `5` means to perform the sparse calculation.
 
-+ *dense_calc* : Whether to replace sparse matrix calculation with dense matrix calculation.
++ *sparse_calc_config* : The directory to the *JSON* configuration file.
 
-- *huge_structure* : Whether to save your memory and cost more time during inference.
+- *dense_calc* : Whether to replace sparse matrix calculation with dense matrix calculation.
 
-+ *restore_blocks_py* : Whether to use Python code to rearrange matrix blocks. You can set it `False` to use Julia code instead to improve efficiency.
++ *huge_structure* : Whether to save your memory and cost more time during inference.
+
+- *restore_blocks_py* : Whether to use Python code to rearrange matrix blocks. You can set it `False` to use Julia code instead to improve efficiency.
 
 ## interpreter
 
