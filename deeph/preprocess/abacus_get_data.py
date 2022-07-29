@@ -59,7 +59,7 @@ class OrbAbacus2DeepH:
         return block_lefts @ mat @ block_rights.T
 
 
-def parse_ABACUS(input_path, output_path, only_S=False):
+def abacus_parse(input_path, output_path, only_S=False):
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     os.makedirs(output_path, exist_ok=True)
@@ -230,4 +230,4 @@ if __name__ == '__main__':
     else:
         raise ValueError("Wrong number of arguments")
     print("only_S: {}".format(only_S))
-    parse_ABACUS(ABACUS_path, output_path, only_S)
+    abacus_parse(ABACUS_path, output_path, only_S)

@@ -4,7 +4,7 @@ import subprocess as sp
 import argparse
 from pathos.multiprocessing import ProcessingPool as Pool
 
-from deeph import get_preprocess_config, get_rc, get_rh, parse_ABACUS
+from deeph import get_preprocess_config, get_rc, get_rh, abacus_parse
 
 
 def main():
@@ -73,7 +73,7 @@ def main():
         capture_output = sp.run(cmd, shell=True, capture_output=False, encoding="utf-8")
         assert capture_output.returncode == 0
         if interface == 'abacus':
-            parse_ABACUS(abspath, os.path.abspath(relpath))
+            abacus_parse(abspath, os.path.abspath(relpath))
         get_rc(os.path.abspath(relpath), os.path.abspath(relpath), radius=config.getfloat('graph', 'radius'),
                r2_rand=config.getboolean('graph', 'r2_rand'),
                create_from_DFT=config.getboolean('graph', 'create_from_DFT'), neighbour_file='hamiltonians.h5')

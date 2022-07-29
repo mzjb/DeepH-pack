@@ -5,7 +5,7 @@ import json
 
 import argparse
 
-from deeph import get_inference_config, rotate_back, parse_ABACUS
+from deeph import get_inference_config, rotate_back, abacus_parse
 from deeph.preprocess import openmx_parse_overlap, get_rc
 from deeph.inference import predict, predict_with_grad
 
@@ -21,7 +21,6 @@ def main():
     work_dir = os.path.abspath(config.get('basic', 'work_dir'))
     OLP_dir = os.path.abspath(config.get('basic', 'OLP_dir'))
     interface = config.get('basic', 'interface')
-    structure_file_name = config.get('basic', 'structure_file_name')
     task = json.loads(config.get('basic', 'task'))
     assert isinstance(task, list)
     disable_cuda = config.getboolean('basic', 'disable_cuda')
@@ -68,9 +67,13 @@ def main():
         begin = time.time()
         print(f"\n####### Begin 1.parse_Overlap")
         if interface == 'openmx':
-            openmx_parse_overlap(OLP_dir, work_dir, os.path.join(OLP_dir, structure_file_name))
+            assert os.path.exists(os.path.join(OLP_dir, 'openmx.out')), "Necessary files could not be found in OLP_dir"
+            assert os.path.exists(os.path.join(OLP_dir, 'output')), "Necessary files could not be found in OLP_dir"
+            openmx_parse_overlap(OLP_dir, work_dir)
         elif interface == 'abacus':
-            parse_ABACUS(OLP_dir, work_dir, only_S=True)
+            assert os.path.exists(os.path.join(OLP_dir, 'SR.csr')), "Necessary files could not be found in OLP_dir"
+            assert os.path.exists(os.path.join(OLP_dir, 'OUT.ABACUS')), "Necessary files could not be found in OLP_dir"
+            abacus_parse(OLP_dir, work_dir, only_S=True)
         assert os.path.exists(os.path.join(work_dir, "overlaps.h5"))
         assert os.path.exists(os.path.join(work_dir, "lat.dat"))
         assert os.path.exists(os.path.join(work_dir, "rlat.dat"))

@@ -4,10 +4,11 @@ from math import pi
 
 import tqdm
 import argparse
-
 import h5py
 import numpy as np
 from pymatgen.core.structure import Structure
+
+from .abacus_get_data import periodic_table
 
 Hartree2Ev = 27.2113845
 Ev2Kcalmol = 23.061
@@ -61,50 +62,75 @@ def openmx_force_intferface(out_file_dir, save_dir=None, return_Etot=False, retu
     return ret
 
 
-def openmx_parse_overlap(OLP_dir, output_dir, stru_dir):
+def openmx_parse_overlap(OLP_dir, output_dir):
     assert os.path.exists(os.path.join(OLP_dir, "output", "overlaps_0.h5")), "No overlap files found"
+    assert os.path.exists(os.path.join(OLP_dir, "openmx.out")), "openmx.out not found"
 
     overlaps = read_non_parallel_hdf5('overlaps', os.path.join(OLP_dir, 'output'))
     assert len(overlaps.keys()) != 0, 'Can not found any overlap file'
     fid = h5py.File(os.path.join(output_dir, 'overlaps.h5'), 'w')
-    R_list = []
     for key_str, v in overlaps.items():
-        key = json.loads(key_str)
-        R = (key[0], key[1], key[2])
-        if R not in R_list:
-            R_list.append(R)
         fid[key_str] = v
     fid.close()
-    structure = Structure.from_file(stru_dir)
 
-    with open(os.path.join(OLP_dir, 'openmx_in.dat'), 'r') as openmx_in_file:
-        lines = openmx_in_file.readlines()
-        orbital2l = {"s": 0, "p": 1, "d": 2, "f": 3}
-        flag_read_orbital = False
-        orbital_dict = {}
-        for line in lines:
-            if line.find('Definition.of.Atomic.Species>') != -1:
-                break
-            if flag_read_orbital:
-                element = line.split()[0]
-                orbital_str = (line.split()[1]).split('-')[-1]
-                l_list = []
-                assert len(orbital_str) % 2 == 0
-                for index_str in range(len(orbital_str) // 2):
-                    l_list.extend([orbital2l[orbital_str[index_str * 2]]] * int(orbital_str[index_str * 2 + 1]))
-                orbital_dict[element] = l_list
-            if line.find('<Definition.of.Atomic.Species') != -1:
-                flag_read_orbital = True
+    orbital2l = {"s": 0, "p": 1, "d": 2, "f": 3}
+    # parse openmx.out
+    with open(os.path.join(OLP_dir, "openmx.out"), "r") as f:
+        lines = f.readlines()
+    orbital_dict = {}
+    lattice = np.zeros((3, 3))
+    frac_coords = []
+    atomic_elements_str = []
+    flag_read_orbital = False
+    flag_read_lattice = False
+    for index_line, line in enumerate(lines):
+        if line.find('Definition.of.Atomic.Species>') != -1:
+            flag_read_orbital = False
+        if flag_read_orbital:
+            element = line.split()[0]
+            orbital_str = (line.split()[1]).split('-')[-1]
+            l_list = []
+            assert len(orbital_str) % 2 == 0
+            for index_str in range(len(orbital_str) // 2):
+                l_list.extend([orbital2l[orbital_str[index_str * 2]]] * int(orbital_str[index_str * 2 + 1]))
+            orbital_dict[element] = l_list
+        if line.find('<Definition.of.Atomic.Species') != -1:
+            flag_read_orbital = True
 
-    np.savetxt(os.path.join(output_dir, "site_positions.dat"), structure.cart_coords.T)
-    np.savetxt(os.path.join(output_dir, "lat.dat"), structure.lattice.matrix.T)
-    np.savetxt(os.path.join(output_dir, "rlat.dat"), np.linalg.inv(structure.lattice.matrix) * 2 * pi)
-    np.savetxt(os.path.join(output_dir, "element.dat"), structure.atomic_numbers, fmt='%d')
-    np.savetxt(os.path.join(output_dir, "R_list.dat"), R_list, fmt='%d')
+        if line.find('Atoms.UnitVectors.Unit') != -1:
+            assert line.split()[1] == "Ang", "Unit of lattice vector is not Angstrom"
+            assert lines[index_line + 1].find("<Atoms.UnitVectors") != -1
+            lattice[0, :] = np.array(list(map(float, lines[index_line + 2].split())))
+            lattice[1, :] = np.array(list(map(float, lines[index_line + 3].split())))
+            lattice[2, :] = np.array(list(map(float, lines[index_line + 4].split())))
+            flag_read_lattice = True
 
+        if line.find('Fractional coordinates of the final structure') != -1:
+            index_atom = 0
+            while (index_line + index_atom + 4) < len(lines):
+                index_atom += 1
+                line_split = lines[index_line + index_atom + 3].split()
+                if len(line_split) == 0:
+                    break
+                assert len(line_split) == 5
+                assert line_split[0] == str(index_atom)
+                atomic_elements_str.append(line_split[1])
+                frac_coords.append(np.array(list(map(float, line_split[2:]))))
+    print("Found", len(frac_coords), "atoms")
+    if flag_read_lattice is False:
+        raise RuntimeError("Could not find lattice vector in openmx.out")
+    if len(orbital_dict) == 0:
+        raise RuntimeError("Could not find orbital information in openmx.out")
+    frac_coords = np.array(frac_coords)
+    cart_coords = frac_coords @ lattice
+
+    np.savetxt(os.path.join(output_dir, "site_positions.dat"), cart_coords.T)
+    np.savetxt(os.path.join(output_dir, "lat.dat"), lattice.T)
+    np.savetxt(os.path.join(output_dir, "rlat.dat"), np.linalg.inv(lattice) * 2 * pi)
+    np.savetxt(os.path.join(output_dir, "element.dat"),
+               np.array(list(map(lambda x: periodic_table[x], atomic_elements_str))), fmt='%d')
     with open(os.path.join(output_dir, 'orbital_types.dat'), 'w') as orbital_types_f:
-        for atom in structure:
-            element_str = str(atom.specie)
+        for element_str in atomic_elements_str:
             for index_l, l in enumerate(orbital_dict[element_str]):
                 if index_l == 0:
                     orbital_types_f.write(str(l))
