@@ -59,7 +59,7 @@ class OrbAbacus2DeepH:
         return block_lefts @ mat @ block_rights.T
 
 
-def abacus_parse(input_path, output_path, only_S=False):
+def abacus_parse(input_path, output_path, only_S=False, get_r=False):
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     os.makedirs(output_path, exist_ok=True)
@@ -218,16 +218,61 @@ def abacus_parse(input_path, output_path, only_S=False):
     with h5py.File(os.path.join(output_path, "overlaps.h5"), 'w') as fid:
         for key_str, value in overlap_dict.items():
             fid[key_str] = value
+    if get_r:
+        def parse_r_matrix(matrix_path, factor):
+            matrix_dict = dict()
+            with open(matrix_path, 'r') as f:
+                line = f.readline();
+                norbits = int(line.split()[-1])
+                for line in f:
+                    line1 = line.split()
+                    if len(line1) == 0:
+                        break
+                    assert len(line1) > 3
+                    R_cur = np.array(line1[:3]).astype(int)
+                    mat_cur = np.zeros((3, norbits * norbits))
+                    for line_index in range(norbits * norbits):
+                        line_mat = f.readline().split()
+                        assert len(line_mat) == 3
+                        mat_cur[:, line_index] = np.array(line_mat)
+                    mat_cur = mat_cur.reshape((3, norbits, norbits))
+
+                    for index_site_i in range(nsites):
+                        for index_site_j in range(nsites):
+                            for direction in range(3):
+                                key_str = f"[{R_cur[0]}, {R_cur[1]}, {R_cur[2]}, {index_site_i + 1}, {index_site_j + 1}, {direction + 1}]"
+                                mat = mat_cur[direction, site_norbits_cumsum[index_site_i]
+                                              - site_norbits[index_site_i]:site_norbits_cumsum[index_site_i],
+                                      site_norbits_cumsum[index_site_j]
+                                      - site_norbits[index_site_j]:site_norbits_cumsum[index_site_j]]
+                                if abs(mat).max() < 1e-8:
+                                    continue
+                                mat = U_orbital.transform(mat, orbital_types_dict[element[index_site_i]],
+                                                          orbital_types_dict[element[index_site_j]])
+                                matrix_dict[key_str] = mat * factor
+            return matrix_dict, norbits
+        position_dict, tmp = parse_r_matrix(os.path.join(input_path, "OUT.ABACUS", "data-rR-tr_SPIN1"), 0.529177249) # Bohr2Ang
+        assert tmp == norbits
+
+        with h5py.File(os.path.join(output_path, "positions.h5"), 'w') as fid:
+            for key_str, value in position_dict.items():
+                fid[key_str] = value
 
 
 if __name__ == '__main__':
-    ABACUS_path = sys.argv[1]
-    output_path = sys.argv[2]
     if len(sys.argv) == 3:
         only_S = False
+        get_r = False
     elif len(sys.argv) == 4:
         only_S = bool(int(sys.argv[3]))
+        get_r = False
+    elif len(sys.argv) == 5:
+        only_S = bool(int(sys.argv[3]))
+        get_r = bool(int(sys.argv[4]))
     else:
         raise ValueError("Wrong number of arguments")
+    ABACUS_path = sys.argv[1]
+    output_path = sys.argv[2]
     print("only_S: {}".format(only_S))
-    abacus_parse(ABACUS_path, output_path, only_S)
+    print("get_r: {}".format(get_r))
+    abacus_parse(ABACUS_path, output_path, only_S, get_r)
