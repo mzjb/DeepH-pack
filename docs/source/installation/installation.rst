@@ -4,7 +4,7 @@ Installation
 Requirements
 ------------
 
-To use the DeepH-pack, following environments and packages are required:
+To use DeepH-pack, following environments and packages are required:
 
 Python packages
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -79,7 +79,7 @@ Then enter the pkg REPL by pressing ``]`` from the Julia REPL. In the pkg REPL r
    (@v1.5) pkg> add DelimitedFiles
    (@v1.5) pkg> add StaticArrays
 
-Install the DeepH-pack
+Install DeepH-pack
 ------------------------
 
 Run the following command in the path of DeepH-pack::
@@ -93,7 +93,7 @@ Install one of the supported DFT packages
 ------------------------------------------------
 
 One of the supported DFT packages is required to obtain the dataset.
-The DeepH-pack supports DFT results made by ABACUS, OpenMX or FHI-aims
+DeepH-pack supports DFT results made by ABACUS, OpenMX or FHI-aims
 and will support SIESTA soon.
 
 ABACUS

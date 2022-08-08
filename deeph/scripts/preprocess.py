@@ -19,6 +19,7 @@ def main():
     processed_dir = os.path.abspath(config.get('basic', 'processed_dir'))
     target = config.get('basic', 'target')
     interface = config.get('basic', 'interface')
+    local_coordinate = config.getboolean('basic', 'local_coordinate')
 
     julia_interpreter = config.get('interpreter', 'julia_interpreter')
 
@@ -74,10 +75,11 @@ def main():
         assert capture_output.returncode == 0
         if interface == 'abacus':
             abacus_parse(abspath, os.path.abspath(relpath))
-        get_rc(os.path.abspath(relpath), os.path.abspath(relpath), radius=config.getfloat('graph', 'radius'),
-               r2_rand=config.getboolean('graph', 'r2_rand'),
-               create_from_DFT=config.getboolean('graph', 'create_from_DFT'), neighbour_file='hamiltonians.h5')
-        get_rh(os.path.abspath(relpath), os.path.abspath(relpath), target)
+        if local_coordinate:
+            get_rc(os.path.abspath(relpath), os.path.abspath(relpath), radius=config.getfloat('graph', 'radius'),
+                   r2_rand=config.getboolean('graph', 'r2_rand'),
+                   create_from_DFT=config.getboolean('graph', 'create_from_DFT'), neighbour_file='hamiltonians.h5')
+            get_rh(os.path.abspath(relpath), os.path.abspath(relpath), target)
 
     if config.getboolean('basic', 'multiprocessing'):
         print('Use multiprocessing')

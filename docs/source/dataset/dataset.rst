@@ -6,8 +6,9 @@ for a class of large-scale material systems, one needs to design an appropriate
 dataset of small structures that have close chemical bonding environment with 
 the target large-scale material systems. Therefore, the first step of a DeepH 
 study is to perform the DFT calculation on the above dataset to get the DFT 
-Hamiltonian matrices with the localized basis. The DeepH-pack supports DFT
-results made by ABACUS, OpenMX or FHI-aims and will support SIESTA soon.
+Hamiltonian matrices with the localized basis. DeepH-pack supports DFT
+results made by ABACUS, OpenMX or FHI-aims and will support SIESTA and HONPAS
+soon.
 
 Using ABACUS
 ^^^^^^^^^^^^^^^^^^^^^^^^

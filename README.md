@@ -8,7 +8,14 @@
 
 DeepH-pack is the official implementation of the Deep Hamiltonian (DeepH) method described in the paper [*Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation*](https://www.nature.com/articles/s43588-022-00265-6) and in the [Research Briefing](https://www.nature.com/articles/s43588-022-00270-9).
 
-For more information, see the [documentation](https://deeph-pack.readthedocs.io).
+DeepH-pack supports DFT results made by
+[ABACUS](https://abacus.ustc.edu.cn/), [OpenMX](http://www.openmx-square.org/)
+or [FHI-aims](https://fhi-aims.org/)
+and will support [SIESTA](https://departments.icmab.es/leem/siesta/) and
+[HONPAS](http://honpas.ustc.edu.cn/) soon.
+
+For more information, see the
+[documentation](https://deeph-pack.readthedocs.io).
 
 # Contents
 1. [How to cite](#how-to-cite)
@@ -37,7 +44,7 @@ For more information, see the [documentation](https://deeph-pack.readthedocs.io)
 
 ## Requirements
 
-To use the DeepH-pack, following environments and packages are required：
+To use DeepH-pack, following environments and packages are required：
 
 ### Python
 Prepare the Python 3.9 interpreter. Install the following Python packages required:
@@ -111,7 +118,7 @@ Then enter the pkg REPL by pressing `]` from the Julia REPL. In the pkg REPL run
 ### One of the supported DFT packages
 One of the supported DFT packages is required to obtain the dataset and
 calculate the overlap matrix for large-scale material systems.
-The DeepH-pack supports DFT results made by ABACUS, OpenMX or FHI-aims
+DeepH-pack supports DFT results made by ABACUS, OpenMX or FHI-aims
 and will support SIESTA soon.
 
 1. **ABACUS**: Install [ABACUS package](https://abacus.ustc.edu.cn)
@@ -130,7 +137,7 @@ and will support SIESTA soon.
     2. A modified OpenMX package is also used to compute overlap matrices only for large-scale materials structure. Install 'overlap only' OpenMX according to the *readme* documentation in this [repository](https://github.com/mzjb/overlap-only-OpenMX).
 ## Usage
 
-### Install the DeepH-pack
+### Install DeepH-pack
 Run the following command in the path of DeepH-pack:
 ```bash
 git clone https://github.com/mzjb/DeepH-pack.git
@@ -144,8 +151,8 @@ for a class of large-scale material systems, one needs to design an appropriate
 dataset of small structures that have close chemical bonding environment with 
 the target large-scale material systems. Therefore, the first step of a DeepH 
 study is to perform the DFT calculation on the above dataset to get the DFT 
-Hamiltonian matrices with the localized basis. The DeepH-pack supports DFT 
-results made by ABACUS, OpenMX or FHI-aims and will support SIESTA soon.
+Hamiltonian matrices with the localized basis. DeepH-pack supports DFT 
+results made by ABACUS, OpenMX or FHI-aims and will support SIESTA and HONPAS soon.
 
 For more information, see the
 [documentation](https://deeph-pack.readthedocs.io/en/latest/dataset/dataset.html).

@@ -1,5 +1,5 @@
 # Demo: Reproduce the experimental results of the paper
-You can train DeepH models using the existing [dataset](https://zenodo.org/record/6555484) to reproduce the results of our paper.
+You can train DeepH models using the existing [dataset](https://zenodo.org/record/6555484) to reproduce the results of this [paper](https://www.nature.com/articles/s43588-022-00265-6).
 
 Firstly, download the processed dataset for graphene (*graphene_dataset.zip*), MoS<sub>2</sub> (*MoS2_dataset.zip*), twisted bilayer graphene (*TBG_dataset.zip*) or twisted bilayer bismuthene (*TBB_dataset.zip*). Uncompress the ZIP file.
 
