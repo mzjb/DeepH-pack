@@ -70,6 +70,14 @@ class LossRecord:
         self.avg = self.sum / self.count
 
 
+def if_integer(string):
+    try:
+        int(string)
+        return True
+    except ValueError:
+        return False
+
+
 class Transform:
     def __init__(self, tensor=None, mask=None, normalizer=False, boxcox=False):
         self.normalizer = normalizer
@@ -196,6 +204,6 @@ def get_preprocess_config(*args):
         config.read(config_file)
     assert config['basic']['target'] in ['hamiltonian', 'density_matrix', 'phiVdphi']
     assert config['basic']['interface'] in ['openmx', 'abacus', 'aims', 'siesta']
-    assert config['basic']['multiprocessing'] in ['False'], 'multiprocessing is not yet implemented'
+    assert if_integer(config['basic']['multiprocessing']), "value of multiprocessing must be an integer"
 
     return config

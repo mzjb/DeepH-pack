@@ -555,15 +555,21 @@ class DeepHKernal:
                 is_best = val_losses.avg < self.best_val_loss
                 self.best_val_loss = min(val_losses.avg, self.best_val_loss)
 
-                save_model({
-                    'epoch': epoch + 1,
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                    'best_val_loss': self.best_val_loss,
-                    'spinful': self.spinful,
-                    'Z_to_index': self.Z_to_index,
-                    'index_to_Z': self.index_to_Z,
-                }, {'model': self.model}, {'state_dict': self.model.state_dict()},
-                    path=self.config.get('basic', 'save_dir'), is_best=is_best)
+                save_complete = False
+                while not save_complete:
+                    try:
+                        save_model({
+                            'epoch': epoch + 1,
+                            'optimizer_state_dict': self.optimizer.state_dict(),
+                            'best_val_loss': self.best_val_loss,
+                            'spinful': self.spinful,
+                            'Z_to_index': self.Z_to_index,
+                            'index_to_Z': self.index_to_Z,
+                        }, {'model': self.model}, {'state_dict': self.model.state_dict()},
+                            path=self.config.get('basic', 'save_dir'), is_best=is_best)
+                        save_complete = True
+                    except KeyboardInterrupt:
+                        print('\nKeyboardInterrupt while saving model to disk')
 
                 if self.config.get('hyperparameter', 'lr_scheduler') == 'MultiStepLR':
                     self.scheduler.step()

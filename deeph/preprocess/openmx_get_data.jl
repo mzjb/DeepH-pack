@@ -30,7 +30,7 @@ function parse_commandline()
 end
 parsed_args = parse_commandline()
 
-@info string("get data from: ", parsed_args["input_dir"])
+# @info string("get data from: ", parsed_args["input_dir"])
 periodic_table = JSON.parsefile(joinpath(@__DIR__, "periodic_table.json"))
 
 #=

@@ -10,7 +10,7 @@ The default value can be found in `DeepH-pack/deeph/preprocess/preprocess_defaul
 
 - *interface* : Which DFT package is used to get the Hamiltonian. Support `abacus`, `openmx` and `aims`.
 
-+ *multiprocessing* : Whether to use multiprocessing to perform `Preprocess` for different data.
++ *multiprocessing* : Number of processes to use to perform `Preprocess`. Set to `-1` to use all available CPUs. Set to `0` to disable multiprocessing.
 
 ## interpreter
 

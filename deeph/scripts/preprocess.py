@@ -1,5 +1,6 @@
 import os
 import subprocess as sp
+import time
 
 import argparse
 from pathos.multiprocessing import ProcessingPool as Pool
@@ -20,6 +21,7 @@ def main():
     target = config.get('basic', 'target')
     interface = config.get('basic', 'interface')
     local_coordinate = config.getboolean('basic', 'local_coordinate')
+    multiprocessing = config.getint('basic', 'multiprocessing')
 
     julia_interpreter = config.get('interpreter', 'julia_interpreter')
 
@@ -61,7 +63,16 @@ def main():
     print(f"Found {len(abspath_list)} directories to preprocess")
 
     def worker(index):
-        print(f'Preprocessing No. {index + 1}/{len(abspath_list)}...')
+        time_cost = time.time() - begin_time
+        current_block = index // nodes
+        if current_block < 1:
+            time_estimate = '?'
+        else:
+            num_blocks = (len(abspath_list) + nodes - 1) // nodes
+            time_estimate = time.localtime(time_cost / (current_block) * (num_blocks - current_block))
+            time_estimate = time.strftime("%H:%M:%S", time_estimate)
+        print(f'\rPreprocessing No. {index + 1}/{len(abspath_list)} '
+              f'[{time.strftime("%H:%M:%S", time.localtime(time_cost))}<{time_estimate}]...', end='')
         abspath = abspath_list[index]
         relpath = relpath_list[index]
         os.makedirs(relpath, exist_ok=True)
@@ -71,8 +82,12 @@ def main():
             target=target,
             interface=interface
         )
-        capture_output = sp.run(cmd, shell=True, capture_output=False, encoding="utf-8")
-        assert capture_output.returncode == 0
+        try:
+            sp.run(cmd, shell=True, capture_output=True, encoding="utf-8", check=True)
+        except sp.CalledProcessError:
+            print(f'\nfailed to preprocess: {abspath}')
+            return
+
         if interface == 'abacus':
             abacus_parse(abspath, os.path.abspath(relpath))
         if local_coordinate:
@@ -81,13 +96,21 @@ def main():
                    create_from_DFT=config.getboolean('graph', 'create_from_DFT'), neighbour_file='hamiltonians.h5')
             get_rh(os.path.abspath(relpath), os.path.abspath(relpath), target)
 
-    if config.getboolean('basic', 'multiprocessing'):
-        print('Use multiprocessing')
-        with Pool() as pool:
-            pool.imap(worker, range(len(abspath_list)))
+    begin_time = time.time()
+    if multiprocessing != 0:
+        if multiprocessing > 0:
+            pool_dict = {'nodes': multiprocessing}
+        else:
+            pool_dict = {}
+        with Pool(**pool_dict) as pool:
+            nodes = pool.nodes
+            print(f'Use multiprocessing (nodes = {nodes})')
+            pool.map(worker, range(len(abspath_list)))
     else:
+        nodes = 1
         for index in range(len(abspath_list)):
             worker(index)
+    print(f'\nPreprocess finished in {time.time() - begin_time:.2f} seconds')
 
 if __name__ == '__main__':
     main()

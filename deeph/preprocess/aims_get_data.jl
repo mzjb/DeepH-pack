@@ -36,7 +36,7 @@ output_dir = abspath(parsed_args["output_dir"])
 @assert isfile(joinpath(input_dir, "basis-indices.out"))
 @assert isfile(joinpath(input_dir, "geometry.in"))
 
-@info string("get data from: ", input_dir)
+# @info string("get data from: ", input_dir)
 periodic_table = JSON.parsefile(joinpath(@__DIR__, "periodic_table.json"))
 mkpath(output_dir)
 

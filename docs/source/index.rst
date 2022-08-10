@@ -46,5 +46,5 @@ References
 ^^^^^^^^^^^^^^^^^
 .. [#deeph] H. Li, Z. Wang, N. Zou, M. Ye, R. Xu, X. Gong, W. Duan, Y. Xu.
    `Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation <https://doi.org/10.1038/s43588-022-00265-6>`_.
-   *Nat. Comput. Sci.* **2** (1), 367–377 2022.
+   *Nat. Comput. Sci.* **2**, 367–377 (2022).
 

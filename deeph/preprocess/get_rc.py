@@ -55,7 +55,7 @@ def _get_local_coordinate(eij, neighbours_i, gen_rc_idx=False, atom_j=None, atom
                 break
     assert r2_flag is not None, "There is no linear independent chemical bond in the Rcut range, this may be caused by a too small Rcut or the structure is 1D"
     if r2_rand:
-        print(f"r2 is randomly chosen from {len(r2_list)} candidates")
+        # print(f"r2 is randomly chosen from {len(r2_list)} candidates")
         r2 = r2_list[np.random.randint(len(r2_list))]
     local_coordinate_1 = r1 / torch.norm(r1)
     local_coordinate_2 = torch.cross(r1, r2) / torch.norm(torch.cross(r1, r2))
@@ -79,7 +79,7 @@ def get_rc(input_dir, output_dir, radius, r2_rand=False, gen_rc_idx=False, gen_r
         rc_idx_dict = {}
     neighbours_dict = {}
     if gen_rc_by_idx != "":
-        print(f'get local coordinate using {os.path.join(gen_rc_by_idx, "rc_idx.h5")} from: {input_dir}')
+        # print(f'get local coordinate using {os.path.join(gen_rc_by_idx, "rc_idx.h5")} from: {input_dir}')
         assert os.path.exists(os.path.join(gen_rc_by_idx, "rc_idx.h5")), 'Atomic indices for constructing rc rc_idx.h5 is not found in {}'.format(gen_rc_by_idx)
         fid_rc_idx = h5py.File(os.path.join(gen_rc_by_idx, "rc_idx.h5"), 'r')
         for key_str, rc_idx in fid_rc_idx.items():
@@ -97,7 +97,7 @@ def get_rc(input_dir, output_dir, radius, r2_rand=False, gen_rc_idx=False, gen_r
             rc_dict[key_str] = torch.stack([local_coordinate_1, local_coordinate_2, local_coordinate_3], dim=-1)
         fid_rc_idx.close()
     else:
-        print("get local coordinate from:", input_dir)
+        # print("get local coordinate from:", input_dir)
         if create_from_DFT:
             assert os.path.exists(os.path.join(input_dir, neighbour_file)), 'No {} found in {}'.format(neighbour_file, input_dir)
             fid_OLP = h5py.File(os.path.join(input_dir, neighbour_file), 'r')
