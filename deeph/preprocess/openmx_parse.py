@@ -352,10 +352,10 @@ class OijLoad:
 
 class GetEEiEij:
     def __init__(self, input_dir):
-        self.load_kernal = OijLoad(os.path.join(input_dir, "output"))
+        self.load_kernel = OijLoad(os.path.join(input_dir, "output"))
         self.E_kin, self.E_delta_ee, self.E_NA, self.E_NL, self.E_xc, self.Etot, self.force = openmx_force_intferface(
             os.path.join(input_dir, "openmx.out"), save_dir=None, return_Etot=True, return_force=True)
-        self.load_kernal.cal_Eij()
+        self.load_kernel.cal_Eij()
 
     def get_Etot(self):
         # unit: kcal mol^-1
@@ -371,7 +371,7 @@ class GetEEiEij:
 
     def get_E5i(self):
         # unit: kcal mol^-1
-        E5i, E_from_i_dict = self.load_kernal.get_E5i()
+        E5i, E_from_i_dict = self.load_kernel.get_E5i()
         assert np.allclose(self.E_kin, E_from_i_dict["E_kin"])
         assert np.allclose(self.E_delta_ee, E_from_i_dict["E_delta_ee"])
         assert np.allclose(self.E_NA, E_from_i_dict["E_NA"])
@@ -381,7 +381,7 @@ class GetEEiEij:
 
     def get_E5ij(self):
         # unit: kcal mol^-1
-        E5ij, E_from_ij_dict = self.load_kernal.get_E5ij()
+        E5ij, E_from_ij_dict = self.load_kernel.get_E5ij()
         assert np.allclose(self.E_kin, E_from_ij_dict["E_kin"])
         assert np.allclose(self.E_delta_ee, E_from_ij_dict["E_delta_ee"])
         assert np.allclose(self.E_NA, E_from_ij_dict["E_NA"])
@@ -405,13 +405,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
-    load_kernal = OijLoad(os.path.join(args.input_dir, "output"))
+    load_kernel = OijLoad(os.path.join(args.input_dir, "output"))
     E_kin, E_delta_ee, E_NA, E_NL, E_xc = openmx_force_intferface(os.path.join(args.input_dir, "openmx.out"), args.output_dir)
-    load_kernal.cal_Eij()
+    load_kernel.cal_Eij()
     if args.Ei:
-        E_kin_from_ij, E_delta_ee_from_ij, E_NA_from_ij, E_NL_from_ij, E_xc_from_ij = load_kernal.save_Ei(args.output_dir)
+        E_kin_from_ij, E_delta_ee_from_ij, E_NA_from_ij, E_NL_from_ij, E_xc_from_ij = load_kernel.save_Ei(args.output_dir)
     else:
-        E_kin_from_ij, E_delta_ee_from_ij, E_NA_from_ij, E_NL_from_ij, E_xc_from_ij = load_kernal.save_Eij(args.output_dir)
+        E_kin_from_ij, E_delta_ee_from_ij, E_NA_from_ij, E_NL_from_ij, E_xc_from_ij = load_kernel.save_Eij(args.output_dir)
     assert np.allclose(E_kin, E_kin_from_ij)
     assert np.allclose(E_delta_ee, E_delta_ee_from_ij)
     assert np.allclose(E_NA, E_NA_from_ij)
@@ -422,4 +422,4 @@ if __name__ == '__main__':
     np.savetxt(os.path.join(args.output_dir, "site_positions.dat"), structure.cart_coords.T)
     np.savetxt(os.path.join(args.output_dir, "lat.dat"), structure.lattice.matrix.T)
     np.savetxt(os.path.join(args.output_dir, "element.dat"), structure.atomic_numbers, fmt='%d')
-    np.savetxt(os.path.join(args.output_dir, "R_list.dat"), load_kernal.get_R_list(), fmt='%d')
+    np.savetxt(os.path.join(args.output_dir, "R_list.dat"), load_kernel.get_R_list(), fmt='%d')

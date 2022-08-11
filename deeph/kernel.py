@@ -28,7 +28,7 @@ from .graph import Collater
 from .utils import Logger, save_model, LossRecord, MaskMSELoss, Transform
 
 
-class DeepHKernal:
+class DeepHKernel:
     def __init__(self, config: ConfigParser):
         self.config = config
 
@@ -284,7 +284,7 @@ class DeepHKernal:
             else:
                 print(f'=> no checkpoint found at "{resume}"')
 
-    def get_dataset(self):
+    def get_dataset(self, only_get_graph=False):
         dataset = HData(
             raw_data_dir=self.config.get('basic', 'raw_dir'),
             graph_dir=self.config.get('basic', 'graph_dir'),
@@ -303,6 +303,8 @@ class DeepHKernal:
             new_sp=self.new_sp,
             default_dtype_torch=torch.get_default_dtype(),
         )
+        if only_get_graph:
+            return None, None, None, None
         self.spinful = dataset.info["spinful"]
         self.index_to_Z = dataset.info["index_to_Z"]
         self.Z_to_index = dataset.info["Z_to_index"]

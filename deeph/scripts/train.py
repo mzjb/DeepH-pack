@@ -1,6 +1,6 @@
 import argparse
 
-from deeph import DeepHKernal, get_config
+from deeph import DeepHKernel, get_config
 
 
 def main():
@@ -10,11 +10,14 @@ def main():
 
     print(f'User config name: {args.config}')
     config = get_config(args.config)
-    kernal = DeepHKernal(config)
-    train_loader, val_loader, test_loader, transform = kernal.get_dataset()
-    kernal.build_model()
-    kernal.set_train()
-    kernal.train(train_loader, val_loader, test_loader)
+    only_get_graph = config.getboolean('basic', 'only_get_graph')
+    kernel = DeepHKernel(config)
+    train_loader, val_loader, test_loader, transform = kernel.get_dataset(only_get_graph)
+    if only_get_graph:
+        return
+    kernel.build_model()
+    kernel.set_train()
+    kernel.train(train_loader, val_loader, test_loader)
 
 if __name__ == '__main__':
     main()

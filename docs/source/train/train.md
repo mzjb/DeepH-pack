@@ -24,7 +24,7 @@ the same names may overwrite each other.
 some hyperparameters. For a specific problem your should try adjusting 
 the hyperparameters to obtain better results.
 
-- **The keyword *orbital***. The keyword *orbital* states which orbitals or matrix elements are predicted. It is a little complicated to understand its data structure. To figure out it, you can refer to the [INPUT KEYWORDS section](https://deeph-pack.readthedocs.io/en/latest/keyword/train.html#:~:text=generate%20crystal%20graphs.-,orbital,-%3A%20A%20JSON%20format) or the method [make_mask](https://github.com/mzjb/DeepH-pack/blob/main/deeph/kernel.py#:~:text=def%20make_mask(self%2C%20dataset)%3A) in class `DeepHKernal` defined in `DeepH-pack/deeph/kernel.py`.
+- **The keyword *orbital***. The keyword *orbital* states which orbitals or matrix elements are predicted. It is a little complicated to understand its data structure. To figure out it, you can refer to the [INPUT KEYWORDS section](https://deeph-pack.readthedocs.io/en/latest/keyword/train.html#:~:text=generate%20crystal%20graphs.-,orbital,-%3A%20A%20JSON%20format) or the method [make_mask](https://github.com/mzjb/DeepH-pack/blob/main/deeph/kernel.py#:~:text=def%20make_mask(self%2C%20dataset)%3A) in class `DeepHKernel` defined in `DeepH-pack/deeph/kernel.py`.
 
     Alternatively, a Python script at `DeepH-pack/tools/get_all_orbital_str.py` can be used to generate a default configuration to predict all orbitals with one model.
 
