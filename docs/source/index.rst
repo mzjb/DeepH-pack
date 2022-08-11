@@ -6,7 +6,7 @@
 DeepH-pack's documentation
 ======================================
 
-DeepH-pack is a package for the application of deep neural 
+`DeepH-pack <https://github.com/mzjb/DeepH-pack>`_ is a package for the application of deep neural
 networks to the prediction of density functional theory (DFT) 
 Hamiltonian matrices based on local coordinates and basis 
 transformation [#deeph]_. DeepH-pack supports DFT results made

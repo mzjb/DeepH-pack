@@ -6,7 +6,10 @@
 [![DOI:10.1038/s43588-022-00265-6](https://zenodo.org/badge/DOI/10.1038/s43588-022-00265-6.svg)](https://doi.org/10.1038/s43588-022-00265-6)
 [![Documentation Status](https://readthedocs.org/projects/deeph-pack/badge/)](https://deeph-pack.readthedocs.io/)
 
-DeepH-pack is the official implementation of the Deep Hamiltonian (DeepH) method described in the paper [*Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation*](https://www.nature.com/articles/s43588-022-00265-6) and in the [Research Briefing](https://www.nature.com/articles/s43588-022-00270-9).
+DeepH-pack is the official implementation of the DeepH
+(**Deep** **H**amiltonian) method described in the paper
+[*Deep-learning density functional theory Hamiltonian for efficient ab initio electronic-structure calculation*](https://www.nature.com/articles/s43588-022-00265-6)
+and in the [Research Briefing](https://www.nature.com/articles/s43588-022-00270-9).
 
 DeepH-pack supports DFT results made by
 [ABACUS](https://abacus.ustc.edu.cn/), [OpenMX](http://www.openmx-square.org/)
@@ -15,7 +18,8 @@ and will support [SIESTA](https://departments.icmab.es/leem/siesta/) and
 [HONPAS](http://honpas.ustc.edu.cn/) soon.
 
 For more information, see the
-[documentation](https://deeph-pack.readthedocs.io).
+[documentation](https://deeph-pack.readthedocs.io) and the
+[talk (in Chinese)](https://www.bilibili.com/video/BV1wg41127Mm?share_source=copy_web&vd_source=97d03cee69ef354790abb6105b612e86).
 
 # Contents
 1. [How to cite](#how-to-cite)

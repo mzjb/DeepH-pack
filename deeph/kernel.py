@@ -177,6 +177,8 @@ class DeepHKernal:
             atom_update_net=self.config.get('network', 'atom_update_net', fallback='CGConv'),
             separate_onsite=self.separate_onsite,
             num_l=self.config.getint('network', 'num_l'),
+            trainable_gaussians=self.config.getboolean('network', 'trainable_gaussians', fallback=False),
+            type_affine=self.config.getboolean('network', 'type_affine', fallback=False),
             if_fc_out=False,
         )
         parameter_list = list(signature(HGNN.__init__).parameters.keys())

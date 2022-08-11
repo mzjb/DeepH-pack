@@ -536,9 +536,19 @@ class HGNN(nn.Module):
     def __init__(self, num_species, in_atom_fea_len, in_edge_fea_len, num_orbital,
                  distance_expansion, gauss_stop, if_exp, if_MultipleLinear, if_edge_update, if_lcmp,
                  normalization, atom_update_net, separate_onsite,
-                 trainable_gaussians=False, num_l=5):
+                 trainable_gaussians, type_affine, num_l=5):
         super(HGNN, self).__init__()
+        self.num_species = num_species
         self.embed = nn.Embedding(num_species + 5, in_atom_fea_len)
+
+        # pair-type aware affine
+        if type_affine:
+            self.type_affine = nn.Embedding(
+                num_species ** 2, 2,
+                _weight=torch.stack([torch.ones(num_species ** 2), torch.zeros(num_species ** 2)], dim=-1)
+            )
+        else:
+            self.type_affine = None
 
         if if_edge_update or (if_edge_update is False and if_lcmp is False):
             distance_expansion_len = in_edge_fea_len
@@ -611,7 +621,11 @@ class HGNN(nn.Module):
         atom_fea0 = self.embed(atom_attr)
         distance = edge_attr[:, 0]
         edge_vec = edge_attr[:, 1:4] - edge_attr[:, 4:7]
-        edge_fea0 = self.distance_expansion(distance)
+        if self.type_affine is None:
+            edge_fea0 = self.distance_expansion(distance)
+        else:
+            affine_coeff = self.type_affine(self.num_species * atom_attr[edge_idx[0]] + atom_attr[edge_idx[1]])
+            edge_fea0 = self.distance_expansion(distance * affine_coeff[:, 0] + affine_coeff[:, 1])
         if self.atom_update_net == "PAINN":
             atom_fea0 = PaninnNodeFea(atom_fea0)
 

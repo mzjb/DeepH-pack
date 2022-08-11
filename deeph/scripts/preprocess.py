@@ -82,10 +82,13 @@ def main():
             target=target,
             interface=interface
         )
-        try:
-            sp.run(cmd, shell=True, capture_output=True, encoding="utf-8", check=True)
-        except sp.CalledProcessError:
-            print(f'\nfailed to preprocess: {abspath}')
+        capture_output = sp.run(cmd, shell=True, capture_output=True, encoding="utf-8")
+        if capture_output.returncode != 0:
+            with open(os.path.join(os.path.abspath(relpath), 'error.log'), 'w') as f:
+                f.write(f'[stdout of cmd "{cmd}"]:\n\n{capture_output.stdout}\n\n\n'
+                        f'[stderr of cmd "{cmd}"]:\n\n{capture_output.stderr}')
+            print(f'\nFailed to preprocess: {abspath}, '
+                  f'log file was saved to {os.path.join(os.path.abspath(relpath), "error.log")}')
             return
 
         if interface == 'abacus':
