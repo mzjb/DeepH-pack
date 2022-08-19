@@ -315,6 +315,7 @@ def siesta_parse(input_path, output_path):
         for i in range(len(sparse_form)):
             tmpt[int(sparse_form[i][0]),int(sparse_form[i][1])]=sparse_form[i][2]/0.036749324533634074/2
         H_block_sparse[Rijkab]=tmpt
+    f.close()
     f = h5py.File('{}/hamiltonians.h5'.format(output_path),'w')
     for Rijkab in H_block_sparse.keys():
         f[Rijkab] = H_block_sparse[Rijkab]
@@ -328,6 +329,8 @@ def siesta_parse(input_path, output_path):
             tmpt[int(sparse_form[i][0]),int(sparse_form[i][1])]=sparse_form[i][2]
         S_block_sparse[Rijkab]=tmpt
 
+    f.close()
     f = h5py.File('{}/overlaps.h5'.format(output_path),'w')
     for Rijkab in S_block_sparse.keys():
         f[Rijkab] = S_block_sparse[Rijkab]
+    f.close()

@@ -11,10 +11,10 @@ networks to the prediction of density functional theory (DFT)
 Hamiltonian matrices based on local coordinates and basis 
 transformation [#deeph]_. DeepH-pack supports DFT results made
 by `ABACUS <https://abacus.ustc.edu.cn/>`_,
-`OpenMX <http://www.openmx-square.org/>`_ or
-`FHI-aims <https://fhi-aims.org/>`_
-and will support `SIESTA <https://departments.icmab.es/leem/siesta/>`_
-and `HONPAS <http://honpas.ustc.edu.cn/>`_ soon.
+`OpenMX <http://www.openmx-square.org/>`_,
+`FHI-aims <https://fhi-aims.org/>`_ or
+`SIESTA <https://departments.icmab.es/leem/siesta/>`_,
+and will support `HONPAS <http://honpas.ustc.edu.cn/>`_ soon.
 
 .. toctree::
    :glob:
