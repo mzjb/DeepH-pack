@@ -7,7 +7,7 @@ dataset of small structures that have close chemical bonding environment with
 the target large-scale material systems. Therefore, the first step of a DeepH 
 study is to perform the DFT calculation on the above dataset to get the DFT 
 Hamiltonian matrices with the localized basis. DeepH-pack supports DFT
-results made by ABACUS, OpenMX or FHI-aims and will support SIESTA and HONPAS
+results made by ABACUS, OpenMX, FHI-aims or SIESTA, and will support HONPAS
 soon.
 
 Using ABACUS
@@ -52,4 +52,13 @@ folder for each structure in the dataset.
 Using SIESTA
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-DeepH-pack will support SIESTA soon.
+One needs to perform DFT calculation with SIESTA to get Hamiltonians in binary
+file named ``${System_name}.HSX``. To activate this feature, you should include 
+keyword in ``${System_name}.fdf`` file::
+
+    SaveHS true
+
+It is also recommended to specify a higher convergence criteria for SCF calculation.
+We found it sufficient to write in ``${System_name}.fdf`` file::
+
+    DM.Tolerence  1.d-9
