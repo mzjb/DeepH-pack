@@ -342,12 +342,12 @@ class Collater:
             subgraph_edge_ang_batch = []
             subgraph_index_batch = []
             # batch_edge = [] # edge 的 batch.batch
-            for index_batch, (subgraph_atom_idx, subgraph_edge_idx, subgraph_edge_ang, subgraph_index) in enumerate(
-                    batch.subgraph):
-                subgraph_atom_idx_batch.append(subgraph_atom_idx + batch.__slices__['x'][index_batch])
-                subgraph_edge_idx_batch.append(subgraph_edge_idx + batch.__slices__['edge_attr'][index_batch])
+            for index_batch in range(len(graph_list)):
+                (subgraph_atom_idx, subgraph_edge_idx, subgraph_edge_ang, subgraph_index) = graph_list[index_batch].priv_subgraph.values()
+                subgraph_atom_idx_batch.append(subgraph_atom_idx + batch._slice_dict['x'][index_batch])
+                subgraph_edge_idx_batch.append(subgraph_edge_idx + batch._slice_dict['edge_attr'][index_batch])
+                subgraph_index_batch.append(subgraph_index + batch._slice_dict['edge_attr'][index_batch] * 2)
                 subgraph_edge_ang_batch.append(subgraph_edge_ang)
-                subgraph_index_batch.append(subgraph_index + batch.__slices__['edge_attr'][index_batch] * 2)
 
             subgraph_atom_idx_batch = torch.cat(subgraph_atom_idx_batch, dim=0)
             subgraph_edge_idx_batch = torch.cat(subgraph_edge_idx_batch, dim=0)
@@ -894,10 +894,10 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
                     subgraph_edge_ang_list.append(subgraph_edge_ang)
                     subgraph_index += [index_cursor] * len(atom_idx_connect[j])
                     index_cursor += 1
-                subgraph = (torch.cat(subgraph_atom_idx_list, dim=0),
-                            torch.cat(subgraph_edge_idx_list, dim=0),
-                            torch.cat(subgraph_edge_ang_list, dim=0),
-                            torch.LongTensor(subgraph_index))
+                subgraph =  {"subgraph_atom_idx":torch.cat(subgraph_atom_idx_list, dim=0),
+                             "subgraph_edge_idx":torch.cat(subgraph_edge_idx_list, dim=0),
+                             "subgraph_edge_ang":torch.cat(subgraph_edge_ang_list, dim=0),
+                             "subgraph_index":torch.LongTensor(subgraph_index)}
             else:
                 subgraph = None
 
@@ -905,20 +905,20 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
             data = Data(x=numbers, edge_index=edge_idx, edge_attr=edge_fea, stru_id=stru_id, term_mask=None,
                         term_real=None, onsite_term_real=None,
                         atom_num_orbital=torch.tensor(atom_num_orbital),
-                        subgraph=subgraph,
+                        priv_subgraph=subgraph,
                         **kwargs)
         else:
             if target == 'E_ij' or target == 'E_i':
                 data = Data(x=numbers, edge_index=edge_idx, edge_attr=edge_fea, stru_id=stru_id,
                             **term_dict, **onsite_term_dict,
-                            subgraph=subgraph,
+                            priv_subgraph=subgraph,
                             spinful=False,
                             **kwargs)
             else:
                 data = Data(x=numbers, edge_index=edge_idx, edge_attr=edge_fea, stru_id=stru_id, term_mask=term_mask,
                             **term_dict, **onsite_term_dict,
                             atom_num_orbital=torch.tensor(atom_num_orbital),
-                            subgraph=subgraph,
+                            priv_subgraph=subgraph,
                             spinful=spinful,
                             **kwargs)
     else:

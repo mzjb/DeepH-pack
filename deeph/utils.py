@@ -130,7 +130,7 @@ class Transform:
 
 def save_model(state, model_dict, model_state_dict, path, is_best):
     model_dir = os.path.join(path, 'model.pt')
-    with package.PackageExporter(model_dir, verbose=False) as exp:
+    with package.PackageExporter(model_dir) as exp:
         exp.intern('deeph.**')
         exp.extern([
             'scipy.**', 'numpy.**', 'torch_geometric.**', 'sklearn.**',
