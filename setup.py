@@ -41,7 +41,7 @@ setup(
         "scipy",
         "torch>=1.9",
         "torch_geometric==1.7.2",
-        "e3nn>=0.3.5",
+        "e3nn>=0.3.5, <=0.4.4",
         "h5py",
         "pymatgen",
         "pathos",

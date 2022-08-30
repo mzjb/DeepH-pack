@@ -5,7 +5,7 @@ import time
 import argparse
 from pathos.multiprocessing import ProcessingPool as Pool
 
-from deeph import get_preprocess_config, get_rc, get_rh, abacus_parse
+from deeph import get_preprocess_config, get_rc, get_rh, abacus_parse, siesta_parse
 
 
 def main():
@@ -53,7 +53,7 @@ def main():
     for root, dirs, files in os.walk('./'):
         if (interface == 'openmx' and 'openmx.scfout' in files) or (
             interface == 'abacus' and 'OUT.ABACUS' in dirs) or (
-            interface == 'siesta' and 'hamiltonians.h5' in files) or (
+            interface == 'siesta' and any(['.HSX' in ifile for ifile in files])) or (
             interface == 'aims' and 'NoTB.dat' in files):
             relpath_list.append(root)
             abspath_list.append(os.path.abspath(root))
@@ -93,6 +93,8 @@ def main():
 
         if interface == 'abacus':
             abacus_parse(abspath, os.path.abspath(relpath))
+        elif interface == 'siesta':
+            siesta_parse(abspath, os.path.abspath(relpath))
         if local_coordinate:
             get_rc(os.path.abspath(relpath), os.path.abspath(relpath), radius=config.getfloat('graph', 'radius'),
                    r2_rand=config.getboolean('graph', 'r2_rand'),
