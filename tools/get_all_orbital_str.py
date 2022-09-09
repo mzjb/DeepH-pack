@@ -5,8 +5,8 @@ assert num_element > 0, "Number of atomic types should be greater than 0."
 for index_element in range(num_element):
     input1 = int(input(f"Atomic type #{index_element + 1}'s atomic number: "))
     assert input1 > 0, "Atomic number should be greater than 0."
-    input2 = int(input(f"Atomic type #{index_element + 1}'s orbiatl basis number: "))
-    assert input2 > 0, "Orbiatl basis number should be greater than 0."
+    input2 = int(input(f"Atomic type #{index_element + 1}'s orbital basis number: "))
+    assert input2 > 0, "Orbital basis number should be greater than 0."
     atomic_number.append(input1)
     num_orbitals.append(input2)
 

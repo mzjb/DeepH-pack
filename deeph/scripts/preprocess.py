@@ -22,19 +22,20 @@ def main():
     interface = config.get('basic', 'interface')
     local_coordinate = config.getboolean('basic', 'local_coordinate')
     multiprocessing = config.getint('basic', 'multiprocessing')
+    get_S = config.getboolean('basic', 'get_S')
 
     julia_interpreter = config.get('interpreter', 'julia_interpreter')
 
-    def make_cmd(input_dir, output_dir, target, interface):
+    def make_cmd(input_dir, output_dir, target, interface, get_S):
         if interface == 'openmx':
             if target == 'hamiltonian':
                 cmd = f"{julia_interpreter} " \
                       f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'preprocess', 'openmx_get_data.jl')} " \
-                      f"--input_dir {input_dir} --output_dir {output_dir}"
+                      f"--input_dir {input_dir} --output_dir {output_dir} --save_overlap {str(get_S).lower()}"
             elif target == 'density_matrix':
                 cmd = f"{julia_interpreter} " \
                       f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'preprocess', 'openmx_get_data.jl')} " \
-                      f"--input_dir {input_dir} --output_dir {output_dir} --if_DM true"
+                      f"--input_dir {input_dir} --output_dir {output_dir} --save_overlap {str(get_S).lower()} --if_DM true"
             else:
                 raise ValueError('Unknown target: {}'.format(target))
         elif interface == 'siesta' or interface == 'abacus':
@@ -42,7 +43,7 @@ def main():
         elif interface == 'aims':
             cmd = f"{julia_interpreter} " \
                   f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'preprocess', 'aims_get_data.jl')} " \
-                  f"--input_dir {input_dir} --output_dir {output_dir}"
+                  f"--input_dir {input_dir} --output_dir {output_dir} --save_overlap {str(get_S).lower()}"
         else:
             raise ValueError('Unknown interface: {}'.format(interface))
         return cmd
@@ -80,7 +81,8 @@ def main():
             abspath,
             os.path.abspath(relpath),
             target=target,
-            interface=interface
+            interface=interface,
+            get_S=get_S,
         )
         capture_output = sp.run(cmd, shell=True, capture_output=True, encoding="utf-8")
         if capture_output.returncode != 0:

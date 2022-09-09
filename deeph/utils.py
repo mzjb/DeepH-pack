@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 from configparser import ConfigParser
+from inspect import signature
 
 import numpy as np
 import scipy
@@ -130,7 +131,10 @@ class Transform:
 
 def save_model(state, model_dict, model_state_dict, path, is_best):
     model_dir = os.path.join(path, 'model.pt')
-    with package.PackageExporter(model_dir) as exp:
+    package_dict = {}
+    if 'verbose' in list(signature(package.PackageExporter.__init__).parameters.keys()):
+        package_dict['verbose'] = False
+    with package.PackageExporter(model_dir, **package_dict) as exp:
         exp.intern('deeph.**')
         exp.extern([
             'scipy.**', 'numpy.**', 'torch_geometric.**', 'sklearn.**',

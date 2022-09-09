@@ -34,6 +34,7 @@ and will support `HONPAS <http://honpas.ustc.edu.cn/>`_ soon.
 
    demo/demo1
    demo/demo2
+   demo/demo3
 
 .. toctree::
    :glob:

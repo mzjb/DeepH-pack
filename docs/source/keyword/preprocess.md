@@ -12,6 +12,8 @@ The default value can be found in `DeepH-pack/deeph/preprocess/preprocess_defaul
 
 + *multiprocessing* : Number of processes to use to perform `Preprocess`. Set to `-1` to use all available CPUs. Set to `0` to disable multiprocessing.
 
+- *get_S* : Whether to get the overlap matrix.
+
 ## interpreter
 
 - *julia_interpreter* : The path to the julia interpreter.

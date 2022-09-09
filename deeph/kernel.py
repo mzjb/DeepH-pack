@@ -291,7 +291,6 @@ class DeepHKernel:
             interface=self.config.get('basic', 'interface'),
             target=self.target,
             dataset_name=self.config.get('basic', 'dataset_name'),
-            pyg_version=self.config.get('basic', 'pyg_version'),
             multiprocessing=self.config.getboolean('basic', 'multiprocessing'),
             radius=self.config.getfloat('graph', 'radius'),
             max_num_nbr=self.config.getint('graph', 'max_num_nbr'),

@@ -14,7 +14,7 @@ from .graph import get_graph
 
 class HData(InMemoryDataset):
     def __init__(self, raw_data_dir: str, graph_dir: str, interface: str, target: str,
-                 dataset_name: str, pyg_version: str, multiprocessing: bool, radius, max_num_nbr,
+                 dataset_name: str, multiprocessing: bool, radius, max_num_nbr,
                  num_l, max_element, create_from_DFT, if_lcmp_graph, separate_onsite, new_sp,
                  default_dtype_torch, nums: int = None, transform=None, pre_transform=None, pre_filter=None):
         """
@@ -48,10 +48,6 @@ raw_data_dir
         """
         self.raw_data_dir = raw_data_dir
         assert dataset_name.find('-') == -1, '"-" can not be included in the dataset name'
-        if pyg_version:
-            pyg_version_str = f'-pyg{pyg_version}'
-        else:
-            pyg_version_str = ''
         if create_from_DFT:
             way_create_graph = 'FromDFT'
         else:
@@ -72,7 +68,7 @@ raw_data_dir
             title = 'HGraph'
         else:
             raise ValueError('Unknown prediction target: {}'.format(target))
-        graph_file_name = f'{title}-{interface}-{dataset_name}-{lcmp_str}-{way_create_graph}{pyg_version_str}{onsite_str}{new_sp_str}.pkl'
+        graph_file_name = f'{title}-{interface}-{dataset_name}-{lcmp_str}-{way_create_graph}{onsite_str}{new_sp_str}.pkl'
         self.data_file = os.path.join(graph_dir, graph_file_name)
         os.makedirs(graph_dir, exist_ok=True)
         self.data, self.slices = None, None
@@ -105,7 +101,10 @@ raw_data_dir
             print('Process new data file......')
             self.process()
         begin = time.time()
-        loaded_data = torch.load(self.data_file)
+        try:
+            loaded_data = torch.load(self.data_file)
+        except AttributeError:
+            raise RuntimeError('Error in loading graph data file, try to delete it and generate the graph file with the current version of PyG')
         if len(loaded_data) == 2:
             warnings.warn('You are using the graph data file with an old version')
             self.data, self.slices = loaded_data

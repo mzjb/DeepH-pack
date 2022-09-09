@@ -6,6 +6,7 @@ import warnings
 import math
 
 import torch
+import torch_geometric
 from torch_geometric.data import Data, Batch
 import numpy as np
 import h5py
@@ -326,28 +327,39 @@ def collate_fn(graph_list):
 class Collater:
     def __init__(self, if_lcmp):
         self.if_lcmp = if_lcmp
+        self.flag_pyg2 = (torch_geometric.__version__[0] == '2')
 
     def __call__(self, graph_list):
         if self.if_lcmp:
-            # 对于 1 个晶体图有 n 个节点 m 个边, 每个边两端有 2 个节点, 一共有 2m 个边两侧节点, 2m 个节点中每个节点又有各自的
-            # 近邻, 总得算起来 2m 个节点在 1 个晶体图中带来 M 个近邻. 1 个晶体图的 subgraph_atom_idx shape 是 (M, 2), 取值是
-            # 晶体图的节点 index 也就是 0 ~ n-1; subgraph_edge_idx shape 是 (M), 取值是晶体图的边 index 也就是 0 ~ m-1;
-            # subgraph_edge_ang_batch shape 是 (M, num_l^2); subgraph_index 是用于对卷积后的节点更新做 scatter_add() 的index,
-            # shape 是 (M), 取值是 0 ~ 2m-1
-
+            flag_dict = hasattr(graph_list[0], 'subgraph_dict')
+            if self.flag_pyg2:
+                assert flag_dict, 'Please generate the graph file with the current version of PyG'
             batch = Batch.from_data_list(graph_list)
 
             subgraph_atom_idx_batch = []
             subgraph_edge_idx_batch = []
             subgraph_edge_ang_batch = []
             subgraph_index_batch = []
-            # batch_edge = [] # edge 的 batch.batch
-            for index_batch in range(len(graph_list)):
-                (subgraph_atom_idx, subgraph_edge_idx, subgraph_edge_ang, subgraph_index) = graph_list[index_batch].priv_subgraph.values()
-                subgraph_atom_idx_batch.append(subgraph_atom_idx + batch._slice_dict['x'][index_batch])
-                subgraph_edge_idx_batch.append(subgraph_edge_idx + batch._slice_dict['edge_attr'][index_batch])
-                subgraph_index_batch.append(subgraph_index + batch._slice_dict['edge_attr'][index_batch] * 2)
-                subgraph_edge_ang_batch.append(subgraph_edge_ang)
+            if flag_dict:
+                for index_batch in range(len(graph_list)):
+                    (subgraph_atom_idx, subgraph_edge_idx, subgraph_edge_ang,
+                     subgraph_index) = graph_list[index_batch].subgraph_dict.values()
+                    if self.flag_pyg2:
+                        subgraph_atom_idx_batch.append(subgraph_atom_idx + batch._slice_dict['x'][index_batch])
+                        subgraph_edge_idx_batch.append(subgraph_edge_idx + batch._slice_dict['edge_attr'][index_batch])
+                        subgraph_index_batch.append(subgraph_index + batch._slice_dict['edge_attr'][index_batch] * 2)
+                    else:
+                        subgraph_atom_idx_batch.append(subgraph_atom_idx + batch.__slices__['x'][index_batch])
+                        subgraph_edge_idx_batch.append(subgraph_edge_idx + batch.__slices__['edge_attr'][index_batch])
+                        subgraph_index_batch.append(subgraph_index + batch.__slices__['edge_attr'][index_batch] * 2)
+                    subgraph_edge_ang_batch.append(subgraph_edge_ang)
+            else:
+                for index_batch, (subgraph_atom_idx, subgraph_edge_idx,
+                                  subgraph_edge_ang, subgraph_index) in enumerate(batch.subgraph):
+                    subgraph_atom_idx_batch.append(subgraph_atom_idx + batch.__slices__['x'][index_batch])
+                    subgraph_edge_idx_batch.append(subgraph_edge_idx + batch.__slices__['edge_attr'][index_batch])
+                    subgraph_edge_ang_batch.append(subgraph_edge_ang)
+                    subgraph_index_batch.append(subgraph_index + batch.__slices__['edge_attr'][index_batch] * 2)
 
             subgraph_atom_idx_batch = torch.cat(subgraph_atom_idx_batch, dim=0)
             subgraph_edge_idx_batch = torch.cat(subgraph_edge_idx_batch, dim=0)
@@ -661,7 +673,7 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
                                     ], dim=-1)
                                 read_terms[key] = read_value
                             else:
-                                read_terms[key] = torch.tensor(v, dtype=default_dtype_torch)
+                                read_terms[key] = torch.tensor(v[...], dtype=default_dtype_torch)
                         read_terms_dict[graph_key] = read_terms
                         fid.close()
 
@@ -676,7 +688,7 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
                     if if_require_grad:
                         local_rotation_dict[key] = v
                     else:
-                        local_rotation_dict[key] = torch.tensor(v, dtype=default_dtype_torch)
+                        local_rotation_dict[key] = torch.tensor(v[...], dtype=default_dtype_torch)
                 if not if_require_grad:
                     fid.close()
 
@@ -706,8 +718,6 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
             else:
                 raise ValueError(f'Unknown interface: {interface}')
 
-
-        # process data
         if target == 'E_i':
             term_dict = {}
             onsite_term_dict = {}
@@ -826,7 +836,6 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
                         for l in range(num_l):
                             angular_expansion.append(sph_harm_func.get(l, r_vec_sp[:, 0], r_vec_sp[:, 1]))
                         angular_expansion = torch.cat(angular_expansion, dim=-1).reshape(edge_fea.shape[0], edge_fea.shape[0], -1)
-                    # shape (不同的边, 不同的local坐标, 边特征)
 
                 subgraph_atom_idx_list = []
                 subgraph_edge_idx_list = []
@@ -837,7 +846,6 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
                 for index in range(edge_fea.shape[0]):
                     # h_{i0, jR}
                     i, j = edge_idx[:, index]
-                    #subgraph
                     subgraph_atom_idx = torch.stack([i.repeat(len(atom_idx_connect[i])), atom_idx_connect[i]]).T
                     subgraph_edge_idx = torch.LongTensor(edge_idx_connect[i])
                     if huge_structure:
@@ -905,20 +913,20 @@ def get_graph(cart_coords, frac_coords, numbers, stru_id, r, max_num_nbr, numeri
             data = Data(x=numbers, edge_index=edge_idx, edge_attr=edge_fea, stru_id=stru_id, term_mask=None,
                         term_real=None, onsite_term_real=None,
                         atom_num_orbital=torch.tensor(atom_num_orbital),
-                        priv_subgraph=subgraph,
+                        subgraph_dict=subgraph,
                         **kwargs)
         else:
             if target == 'E_ij' or target == 'E_i':
                 data = Data(x=numbers, edge_index=edge_idx, edge_attr=edge_fea, stru_id=stru_id,
                             **term_dict, **onsite_term_dict,
-                            priv_subgraph=subgraph,
+                            subgraph_dict=subgraph,
                             spinful=False,
                             **kwargs)
             else:
                 data = Data(x=numbers, edge_index=edge_idx, edge_attr=edge_fea, stru_id=stru_id, term_mask=term_mask,
                             **term_dict, **onsite_term_dict,
                             atom_num_orbital=torch.tensor(atom_num_orbital),
-                            priv_subgraph=subgraph,
+                            subgraph_dict=subgraph,
                             spinful=spinful,
                             **kwargs)
     else:
