@@ -18,7 +18,7 @@ def main():
 
     raw_dir = os.path.abspath(config.get('basic', 'raw_dir'))
     processed_dir = os.path.abspath(config.get('basic', 'processed_dir'))
-    abacus_suffix = os.path.abspath(config.get('basic', 'abacus_suffix', fallback='ABACUS'))
+    abacus_suffix = str(config.get('basic', 'abacus_suffix', fallback='ABACUS'))
     target = config.get('basic', 'target')
     interface = config.get('basic', 'interface')
     local_coordinate = config.getboolean('basic', 'local_coordinate')
@@ -95,6 +95,7 @@ def main():
             return
 
         if interface == 'abacus':
+            print("Output subdirectories:", "OUT." + abacus_suffix)
             abacus_parse(abspath, os.path.abspath(relpath), 'OUT.' + abacus_suffix)
         elif interface == 'siesta':
             siesta_parse(abspath, os.path.abspath(relpath))
