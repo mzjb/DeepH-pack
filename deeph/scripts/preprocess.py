@@ -18,6 +18,7 @@ def main():
 
     raw_dir = os.path.abspath(config.get('basic', 'raw_dir'))
     processed_dir = os.path.abspath(config.get('basic', 'processed_dir'))
+    abacus_suffix = os.path.abspath(config.get('basic', 'abacus_suffix'))
     target = config.get('basic', 'target')
     interface = config.get('basic', 'interface')
     local_coordinate = config.getboolean('basic', 'local_coordinate')
@@ -53,7 +54,7 @@ def main():
     abspath_list = []
     for root, dirs, files in os.walk('./'):
         if (interface == 'openmx' and 'openmx.scfout' in files) or (
-            interface == 'abacus' and 'OUT.ABACUS' in dirs) or (
+            interface == 'abacus' and 'OUT.' + abacus_suffix in dirs) or (
             interface == 'siesta' and any(['.HSX' in ifile for ifile in files])) or (
             interface == 'aims' and 'NoTB.dat' in files):
             relpath_list.append(root)
@@ -94,7 +95,7 @@ def main():
             return
 
         if interface == 'abacus':
-            abacus_parse(abspath, os.path.abspath(relpath))
+            abacus_parse(abspath, os.path.abspath(relpath), 'OUT.' + abacus_suffix)
         elif interface == 'siesta':
             siesta_parse(abspath, os.path.abspath(relpath))
         if local_coordinate:
