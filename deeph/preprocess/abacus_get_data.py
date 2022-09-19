@@ -58,8 +58,7 @@ class OrbAbacus2DeepH:
         block_rights = block_diag(*[self.get_U(l_right) for l_right in l_rights])
         return block_lefts @ mat @ block_rights.T
 
-
-def abacus_parse(input_path, output_path, only_S=False, get_r=False):
+def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     os.makedirs(output_path, exist_ok=True)
@@ -77,7 +76,7 @@ def abacus_parse(input_path, output_path, only_S=False, get_r=False):
         log_file_name = "running_get_S.log"
     else:
         log_file_name = "running_scf.log"
-    with open(os.path.join(input_path, "OUT.ABACUS", log_file_name), 'r') as f:
+    with open(os.path.join(input_path, data_name, log_file_name), 'r') as f:
         f.readline()
         line = f.readline()
         assert "WELCOME TO ABACUS" in line
@@ -260,19 +259,20 @@ def abacus_parse(input_path, output_path, only_S=False, get_r=False):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 4:
         only_S = False
         get_r = False
-    elif len(sys.argv) == 4:
-        only_S = bool(int(sys.argv[3]))
-        get_r = False
     elif len(sys.argv) == 5:
-        only_S = bool(int(sys.argv[3]))
-        get_r = bool(int(sys.argv[4]))
+        only_S = bool(int(sys.argv[4]))
+        get_r = False
+    elif len(sys.argv) == 6:
+        only_S = bool(int(sys.argv[4]))
+        get_r = bool(int(sys.argv[5]))
     else:
         raise ValueError("Wrong number of arguments")
     ABACUS_path = sys.argv[1]
     output_path = sys.argv[2]
+    data_name = sys.argv[3]
     print("only_S: {}".format(only_S))
     print("get_r: {}".format(get_r))
-    abacus_parse(ABACUS_path, output_path, only_S, get_r)
+    abacus_parse(ABACUS_path, output_path, data_name, only_S, get_r)
