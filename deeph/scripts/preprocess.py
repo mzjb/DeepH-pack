@@ -18,7 +18,7 @@ def main():
 
     raw_dir = os.path.abspath(config.get('basic', 'raw_dir'))
     processed_dir = os.path.abspath(config.get('basic', 'processed_dir'))
-    abacus_suffix = os.path.abspath(config.get('basic', 'abacus_suffix'))
+    abacus_suffix = os.path.abspath(config.get('basic', 'abacus_suffix', fallback='ABACUS'))
     target = config.get('basic', 'target')
     interface = config.get('basic', 'interface')
     local_coordinate = config.getboolean('basic', 'local_coordinate')
