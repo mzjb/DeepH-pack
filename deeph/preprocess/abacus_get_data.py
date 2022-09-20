@@ -1,10 +1,11 @@
 # Script for interface from ABACUS (http://abacus.ustc.edu.cn/) to DeepH-pack
 # Coded by ZC Tang @ Tsinghua Univ. e-mail: az_txycha@126.com
-# Modified by He Li @ Tsinghua Univ.
-# To use this script, please add 'out_hs2    1' in ABACUS INPUT File
+# Modified by He Li @ Tsinghua Univ. & XY Zhou @ Peking Univ.
+# To use this script, please add 'out_mat_hs2    1' in ABACUS INPUT File
 # Current version is capable of coping with f-orbitals, yet is unable to provide interface for spin-polarized or spin-orbit calculations
 # 20220717: Read structure from running_scf.log
-# Note: 20220717 version requires output subdirectory == "OUT.ABACUS"
+# 20220919: The suffix of the output sub-directories (OUT.suffix) can be set by ["basic"]["abacus_suffix"] keyword in preprocess.ini
+# 20220920: Supporting cartesian coordinates in the log file
 
 import os
 import sys
@@ -14,6 +15,7 @@ import re
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.linalg import block_diag
+import argparse
 import h5py
 
 
@@ -119,8 +121,17 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         line = find_target_line(f, "TOTAL ATOM NUMBER")
         assert line is not None, 'Cannot find "TOTAL ATOM NUMBER" in log file'
         nsites = int(line.split()[-1])
+        
+        line = find_target_line(f, " COORDINATES")
+        assert line is not None, 'Cannot find "DIRECT COORDINATES" or "CARTESIAN COORDINATES" in log file'
+        if "DIRECT" in line:
+            coords_type = "direct" 
+        elif "CARTESIAN" in line:
+            coords_type = "cartesian" 
+        else:
+            raise ValueError('Cannot find "DIRECT COORDINATES" or "CARTESIAN COORDINATES" in log file')
+            exit(1)
 
-        assert find_target_line(f, "DIRECT COORDINATES") is not None, 'Cannot find "DIRECT COORDINATES" in log file'
         assert "atom" in f.readline()
         frac_coords = np.zeros((nsites, 3))
         site_norbits = np.zeros(nsites, dtype=int)
@@ -128,7 +139,7 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         for index_site in range(nsites):
             line = f.readline()
             tmp = line.split()
-            assert "taud_" in tmp[0]
+            assert "tau" in tmp[0]
             atom_label = ''.join(re.findall(r'[A-Za-z]', tmp[0][5:]))
             assert atom_label in periodic_table, "Atom label should be in periodic table"
             element[index_site] = periodic_table[atom_label]
@@ -141,6 +152,8 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         lattice = np.zeros((3, 3))
         for index_lat in range(3):
             lattice[index_lat, :] = np.array(f.readline().split())
+        if coords_type == "cartesian":
+            frac_coords = frac_coords @ np.matrix(lattice).I
         lattice = lattice * lattice_constant
 
         if only_S:
@@ -205,9 +218,9 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         overlap_dict, tmp = parse_matrix(os.path.join(input_path, "SR.csr"), 1)
         assert tmp == norbits
     else:
-        hamiltonian_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-HR-sparse_SPIN0.csr"), 13.605698) # Ryd2eV
+        hamiltonian_dict, tmp = parse_matrix(os.path.join(input_path, data_name, "data-HR-sparse_SPIN0.csr"), 13.605698) # Ryd2eV
         assert tmp == norbits
-        overlap_dict, tmp = parse_matrix(os.path.join(input_path, "OUT.ABACUS", "data-SR-sparse_SPIN0.csr"), 1)
+        overlap_dict, tmp = parse_matrix(os.path.join(input_path, data_name, "data-SR-sparse_SPIN0.csr"), 1)
         assert tmp == norbits
 
     if not only_S:
@@ -250,7 +263,7 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
                                                           orbital_types_dict[element[index_site_j]])
                                 matrix_dict[key_str] = mat * factor
             return matrix_dict, norbits
-        position_dict, tmp = parse_r_matrix(os.path.join(input_path, "OUT.ABACUS", "data-rR-tr_SPIN1"), 0.529177249) # Bohr2Ang
+        position_dict, tmp = parse_r_matrix(os.path.join(input_path, data_name, "data-rR-tr_SPIN1"), 0.529177249) # Bohr2Ang
         assert tmp == norbits
 
         with h5py.File(os.path.join(output_path, "positions.h5"), 'w') as fid:
@@ -259,20 +272,32 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 4:
-        only_S = False
-        get_r = False
-    elif len(sys.argv) == 5:
-        only_S = bool(int(sys.argv[4]))
-        get_r = False
-    elif len(sys.argv) == 6:
-        only_S = bool(int(sys.argv[4]))
-        get_r = bool(int(sys.argv[5]))
-    else:
-        raise ValueError("Wrong number of arguments")
-    ABACUS_path = sys.argv[1]
-    output_path = sys.argv[2]
-    data_name = sys.argv[3]
+    parser = argparse.ArgumentParser(description='Predict Hamiltonian')
+    parser.add_argument(
+        '-i','--input_dir', type=str, default='./',
+        help='path of output subdirectory'
+        )
+    parser.add_argument(
+        '-o','--output_dir', type=str, default='./',
+        help='path of output .h5 and .dat'
+        )
+    parser.add_argument(
+        '-a','--abacus_suffix', type=str, default='ABACUS',
+        help='suffix of output subdirectory'
+        )
+    parser.add_argument(
+        '-S','--only_S', type=int, default=0
+        )
+    parser.add_argument(
+        '-g','--get_r', type=int, default=0
+        )
+    args = parser.parse_args()
+
+    input_path = args.input_dir
+    output_path = args.output_dir
+    data_name = "OUT." + args.abacus_suffix
+    only_S = bool(args.only_S)
+    get_r = bool(args.get_r)
     print("only_S: {}".format(only_S))
     print("get_r: {}".format(get_r))
-    abacus_parse(ABACUS_path, output_path, data_name, only_S, get_r)
+    abacus_parse(input_path, output_path, data_name, only_S, get_r)
