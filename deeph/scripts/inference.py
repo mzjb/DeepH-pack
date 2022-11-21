@@ -21,6 +21,7 @@ def main():
     work_dir = os.path.abspath(config.get('basic', 'work_dir'))
     OLP_dir = os.path.abspath(config.get('basic', 'OLP_dir'))
     interface = config.get('basic', 'interface')
+    abacus_suffix = str(config.get('basic', 'abacus_suffix', fallback='ABACUS'))
     task = json.loads(config.get('basic', 'task'))
     assert isinstance(task, list)
     disable_cuda = config.getboolean('basic', 'disable_cuda')
@@ -71,9 +72,10 @@ def main():
             assert os.path.exists(os.path.join(OLP_dir, 'output')), "Necessary files could not be found in OLP_dir"
             openmx_parse_overlap(OLP_dir, work_dir)
         elif interface == 'abacus':
+            print("Output subdirectories:", "OUT." + abacus_suffix)
             assert os.path.exists(os.path.join(OLP_dir, 'SR.csr')), "Necessary files could not be found in OLP_dir"
-            assert os.path.exists(os.path.join(OLP_dir, 'OUT.ABACUS')), "Necessary files could not be found in OLP_dir"
-            abacus_parse(OLP_dir, work_dir, only_S=True)
+            assert os.path.exists(os.path.join(OLP_dir, f'OUT.{abacus_suffix}')), "Necessary files could not be found in OLP_dir"
+            abacus_parse(OLP_dir, work_dir, data_name=abacus_suffix, only_S=True)
         assert os.path.exists(os.path.join(work_dir, "overlaps.h5"))
         assert os.path.exists(os.path.join(work_dir, "lat.dat"))
         assert os.path.exists(os.path.join(work_dir, "rlat.dat"))
