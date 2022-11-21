@@ -75,7 +75,7 @@ def main():
             print("Output subdirectories:", "OUT." + abacus_suffix)
             assert os.path.exists(os.path.join(OLP_dir, 'SR.csr')), "Necessary files could not be found in OLP_dir"
             assert os.path.exists(os.path.join(OLP_dir, f'OUT.{abacus_suffix}')), "Necessary files could not be found in OLP_dir"
-            abacus_parse(OLP_dir, work_dir, data_name=abacus_suffix, only_S=True)
+            abacus_parse(OLP_dir, work_dir, data_name=f'OUT.{abacus_suffix}', only_S=True)
         assert os.path.exists(os.path.join(work_dir, "overlaps.h5"))
         assert os.path.exists(os.path.join(work_dir, "lat.dat"))
         assert os.path.exists(os.path.join(work_dir, "rlat.dat"))
