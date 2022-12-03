@@ -2,7 +2,7 @@
 # Coded by ZC Tang @ Tsinghua Univ. e-mail: az_txycha@126.com
 # Modified by He Li @ Tsinghua Univ. & XY Zhou @ Peking Univ.
 # To use this script, please add 'out_mat_hs2    1' in ABACUS INPUT File
-# Current version is capable of coping with f-orbitals, yet is unable to provide interface for spin-polarized or spin-orbit calculations
+# Current version is capable of coping with f-orbitals
 # 20220717: Read structure from running_scf.log
 # 20220919: The suffix of the output sub-directories (OUT.suffix) can be set by ["basic"]["abacus_suffix"] keyword in preprocess.ini
 # 20220920: Supporting cartesian coordinates in the log file
@@ -64,8 +64,6 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     os.makedirs(output_path, exist_ok=True)
-
-    spinful = False # Not implemented yet for spinful calculations
 
     def find_target_line(f, target):
         line = f.readline()
@@ -130,7 +128,6 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
             coords_type = "cartesian" 
         else:
             raise ValueError('Cannot find "DIRECT COORDINATES" or "CARTESIAN COORDINATES" in log file')
-            exit(1)
 
         assert "atom" in f.readline()
         frac_coords = np.zeros((nsites, 3))
@@ -155,6 +152,18 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         if coords_type == "cartesian":
             frac_coords = frac_coords @ np.matrix(lattice).I
         lattice = lattice * lattice_constant
+
+        if only_S:
+            spinful = False
+        else:
+            line = find_target_line(f, "NSPIN")
+            assert line is not None, 'Cannot find "NSPIN" in log file'
+            if "NSPIN == 1" in line:
+                spinful = False
+            elif "NSPIN == 4" in line:
+                spinful = True
+            else:
+                raise ValueError(f'{line} is not supported')
 
         if only_S:
             fermi_level = 0.0
@@ -183,7 +192,7 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
             f.write('\n')
 
     U_orbital = OrbAbacus2DeepH()
-    def parse_matrix(matrix_path, factor):
+    def parse_matrix(matrix_path, factor, spinful=False):
         matrix_dict = dict()
         with open(matrix_path, 'r') as f:
             line = f.readline(); f.readline()
@@ -198,19 +207,35 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
                     line2 = f.readline().split()
                     line3 = f.readline().split()
                     line4 = f.readline().split()
-                    hamiltonian_cur = csr_matrix((np.array(line2).astype(float), np.array(line3).astype(int),
-                                                  np.array(line4).astype(int)), shape=(norbits, norbits)).toarray()
+                    if not spinful:
+                        hamiltonian_cur = csr_matrix((np.array(line2).astype(float), np.array(line3).astype(int),
+                                                      np.array(line4).astype(int)), shape=(norbits, norbits)).toarray()
+                    else:
+                        line2 = np.char.replace(line2, '(', '')
+                        line2 = np.char.replace(line2, ')', 'j')
+                        line2 = np.char.replace(line2, ',', '+')
+                        line2 = np.char.replace(line2, '+-', '-')
+                        hamiltonian_cur = csr_matrix((np.array(line2).astype(np.complex128), np.array(line3).astype(int),
+                                                      np.array(line4).astype(int)), shape=(norbits, norbits)).toarray()
                     for index_site_i in range(nsites):
                         for index_site_j in range(nsites):
                             key_str = f"[{R_cur[0]}, {R_cur[1]}, {R_cur[2]}, {index_site_i + 1}, {index_site_j + 1}]"
-                            mat = hamiltonian_cur[site_norbits_cumsum[index_site_i]
-                                                  - site_norbits[index_site_i]:site_norbits_cumsum[index_site_i],
-                                  site_norbits_cumsum[index_site_j]
-                                  - site_norbits[index_site_j]:site_norbits_cumsum[index_site_j]]
+                            mat = hamiltonian_cur[(site_norbits_cumsum[index_site_i]
+                                                  - site_norbits[index_site_i]) * (1 + spinful):
+                                                  site_norbits_cumsum[index_site_i] * (1 + spinful),
+                                  (site_norbits_cumsum[index_site_j] - site_norbits[index_site_j]) * (1 + spinful):
+                                  site_norbits_cumsum[index_site_j] * (1 + spinful)]
                             if abs(mat).max() < 1e-8:
                                 continue
-                            mat = U_orbital.transform(mat, orbital_types_dict[element[index_site_i]],
-                                                      orbital_types_dict[element[index_site_j]])
+                            if not spinful:
+                                mat = U_orbital.transform(mat, orbital_types_dict[element[index_site_i]],
+                                                          orbital_types_dict[element[index_site_j]])
+                            else:
+                                mat = mat.reshape((site_norbits[index_site_i], 2, site_norbits[index_site_j], 2))
+                                mat = mat.transpose((1, 0, 3, 2)).reshape((2 * site_norbits[index_site_i],
+                                                                           2 * site_norbits[index_site_j]))
+                                mat = U_orbital.transform(mat, orbital_types_dict[element[index_site_i]] * 2,
+                                                          orbital_types_dict[element[index_site_j]] * 2)
                             matrix_dict[key_str] = mat * factor
         return matrix_dict, norbits
 
@@ -218,10 +243,18 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         overlap_dict, tmp = parse_matrix(os.path.join(input_path, "SR.csr"), 1)
         assert tmp == norbits
     else:
-        hamiltonian_dict, tmp = parse_matrix(os.path.join(input_path, data_name, "data-HR-sparse_SPIN0.csr"), 13.605698) # Ryd2eV
-        assert tmp == norbits
-        overlap_dict, tmp = parse_matrix(os.path.join(input_path, data_name, "data-SR-sparse_SPIN0.csr"), 1)
-        assert tmp == norbits
+        hamiltonian_dict, tmp = parse_matrix(
+            os.path.join(input_path, data_name, "data-HR-sparse_SPIN0.csr"), 13.605698, # Ryd2eV
+            spinful=spinful)
+        assert tmp == norbits * (1 + spinful)
+        overlap_dict, tmp = parse_matrix(os.path.join(input_path, data_name, "data-SR-sparse_SPIN0.csr"), 1,
+                                         spinful=spinful)
+        assert tmp == norbits * (1 + spinful)
+        if spinful:
+            overlap_dict_spinless = {}
+            for k, v in overlap_dict.items():
+                overlap_dict_spinless[k] = v[:v.shape[0] // 2, :v.shape[1] // 2].real
+            overlap_dict_spinless, overlap_dict = overlap_dict, overlap_dict_spinless
 
     if not only_S:
         with h5py.File(os.path.join(output_path, "hamiltonians.h5"), 'w') as fid:
