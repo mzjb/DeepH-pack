@@ -2,7 +2,7 @@ using DelimitedFiles, LinearAlgebra, JSON
 using HDF5
 using ArgParse
 using SparseArrays
-using Arpack
+using Pardiso, Arpack, LinearMaps
 using JLD
 
 
@@ -39,6 +39,32 @@ function _create_dict_h5(filename::String)
     return d_out
 end
 
+
+# The function construct_linear_map below is come from https://discourse.julialang.org/t/smallest-magnitude-eigenvalues-of-the-generalized-eigenvalue-equation-for-a-large-sparse-matrix/75485/11
+function construct_linear_map(H, S)
+    ps = MKLPardisoSolver()
+    set_matrixtype!(ps, Pardiso.COMPLEX_HERM_INDEF)
+    pardisoinit(ps)
+    fix_iparm!(ps, :N)
+    H_pardiso = get_matrix(ps, H, :N)
+    b = rand(ComplexF64, size(H, 1))
+    set_phase!(ps, Pardiso.ANALYSIS)
+    pardiso(ps, H_pardiso, b)
+    set_phase!(ps, Pardiso.NUM_FACT)
+    pardiso(ps, H_pardiso, b)
+    return (
+        LinearMap{ComplexF64}(
+            (y, x) -> begin
+                set_phase!(ps, Pardiso.SOLVE_ITERATIVE_REFINE)
+                pardiso(ps, y, H_pardiso, S * x)
+            end,
+            size(H, 1);
+            ismutating=true
+        ),
+        ps
+    )
+end
+
 const ev2Hartree = 0.036749324533634074
 const Bohr2Ang = 0.529177249
 
@@ -56,6 +82,23 @@ end
 
 function std_out_array(a::AbstractArray)
     return string(map(x->string(x," "),a)...)
+end
+
+function constructmeshkpts(nkmesh::Vector{Int64}; offset::Vector{Float64}=[0.0, 0.0, 0.0],
+    k1::Vector{Float64}=[0.0, 0.0, 0.0], k2::Vector{Float64}=[1.0, 1.0, 1.0])
+    length(nkmesh) == 3 || throw(ArgumentError("nkmesh in wrong size."))
+    nkpts = prod(nkmesh)
+    kpts = zeros(3, nkpts)
+    ik = 1
+    for ikx in 1:nkmesh[1], iky in 1:nkmesh[2], ikz in 1:nkmesh[3]
+        kpts[:, ik] = [
+            (ikx-1)/nkmesh[1]*(k2[1]-k1[1])+k1[1],
+            (iky-1)/nkmesh[2]*(k2[2]-k1[2])+k1[2],
+            (ikz-1)/nkmesh[3]*(k2[3]-k1[3])+k1[3]
+        ]
+        ik += 1
+    end
+    return kpts.+offset
 end
 
 default_dtype = Complex{Float64}
@@ -194,7 +237,6 @@ end
 if calc_job == "band"
     which_k = config["which_k"] # which k point to calculate, start counting from 1, 0 for all k points
     fermi_level = config["fermi_level"]
-    lowest_band = config["lowest_band"]
     max_iter = config["max_iter"]
     num_band = config["num_band"]
     k_data = config["k_data"]
@@ -223,7 +265,12 @@ if calc_job == "band"
                     S_k += S_R[R] * exp(im*2π*([kx, ky, kz]⋅R))
                 end
                 flush(stdout)
-                egval = real(eigs(H_k, S_k, nev=num_band, sigma=(fermi_level + lowest_band), which=:LR, ritzvec=false, maxiter=max_iter)[1])
+                lm, ps = construct_linear_map(H_k - (fermi_level) * S_k, S_k)
+                println("Time for No.$idx_k matrix factorization: ", time() - begin_time, "s")
+                egval_inv, X = eigs(lm, nev=num_band, which=:LM, ritzvec=false, maxiter=max_iter)
+                set_phase!(ps, Pardiso.RELEASE_ALL)
+                pardiso(ps)
+                egval = real(1 ./ egval_inv) .+ (fermi_level)
                 if which_k == 0
                     println(egval .- fermi_level)
                 else
@@ -268,4 +315,60 @@ if calc_job == "band"
         end
     end
     close(f)
+elseif calc_job == "dos"
+    fermi_level = config["fermi_level"]
+    max_iter = config["max_iter"]
+    num_band = config["num_band"]
+    nkmesh = convert(Array{Int64,1}, config["kmesh"])
+    ks = constructmeshkpts(nkmesh)
+    nks = size(ks, 2)
+
+    egvals = zeros(Float64, num_band, nks)
+    begin_time = time()
+    for idx_k in 1:nks
+        kx, ky, kz = ks[:, idx_k]
+
+        H_k = spzeros(default_dtype, norbits, norbits)
+        S_k = spzeros(default_dtype, norbits, norbits)
+        for R in keys(H_R)
+            H_k += H_R[R] * exp(im*2π*([kx, ky, kz]⋅R))
+            S_k += S_R[R] * exp(im*2π*([kx, ky, kz]⋅R))
+        end
+        flush(stdout)
+        lm, ps = construct_linear_map(H_k - (fermi_level) * S_k, S_k)
+        println("Time for No.$idx_k matrix factorization: ", time() - begin_time, "s")
+        egval_inv, X = eigs(lm, nev=num_band, which=:LM, ritzvec=false, maxiter=max_iter)
+        set_phase!(ps, Pardiso.RELEASE_ALL)
+        pardiso(ps)
+        egval = real(1 ./ egval_inv) .+ (fermi_level)
+        # egval = real(eigs(H_k, S_k, nev=num_band, sigma=(fermi_level + lowest_band), which=:LR, ritzvec=false, maxiter=max_iter)[1])
+        if true
+            println(egval .- fermi_level)
+        else
+            open(joinpath(parsed_args["output_dir"], "kpoint.dat"), "w") do f
+                writedlm(f, [kx, ky, kz])
+            end
+            open(joinpath(parsed_args["output_dir"], "egval.dat"), "w") do f
+                writedlm(f, egval)
+            end
+        end
+        egvals[:, idx_k] = egval
+        println("Time for solving No.$idx_k eigenvalues at k = ", [kx, ky, kz], ": ", time() - begin_time, "s")
+    end
+
+    open(joinpath(parsed_args["output_dir"], "egvals.dat"), "w") do f
+        writedlm(f, egvals)
+    end
+
+    ϵ = config["epsilon"]
+    ωs = genlist(config["omegas"])
+    nωs = length(ωs)
+    dos = zeros(nωs)
+    factor = 1/((2π)^3*ϵ*√π)
+    for idx_k in 1:nks, idx_band in 1:num_band, (idx_ω, ω) in enumerate(ωs)
+        dos[idx_ω] += exp(-(egvals[idx_band, idx_k] - ω - fermi_level) ^ 2 / ϵ ^ 2) * factor
+    end
+    open(joinpath(parsed_args["output_dir"], "dos.dat"), "w") do f
+        writedlm(f, [ωs dos])
+    end
 end

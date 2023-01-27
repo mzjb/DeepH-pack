@@ -97,6 +97,8 @@ Prepare the Julia 1.5.4 interpreter. Install the following Julia packages requir
 - IterativeSolvers.jl
 - DelimitedFiles.jl
 - StaticArrays.jl
+- LinearMaps.jl
+- Pardiso.jl
 
 In Linux, you can quickly achieve the requirements by first running
 ```bash
@@ -117,7 +119,9 @@ Then enter the pkg REPL by pressing `]` from the Julia REPL. In the pkg REPL run
 (@v1.5) pkg> add IterativeSolvers
 (@v1.5) pkg> add DelimitedFiles
 (@v1.5) pkg> add StaticArrays
+(@v1.5) pkg> add LinearMaps
 ```
+Follow [these instructions](https://github.com/JuliaSparse/Pardiso.jl#mkl-pardiso) to install Pardiso.jl.
 
 ### One of the supported DFT packages
 One of the supported DFT packages is required to obtain the dataset and
