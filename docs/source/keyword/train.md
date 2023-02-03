@@ -91,9 +91,7 @@ The default value can be found in `DeepH-pack/deeph/default.ini`. The following 
 
 - *distance_expansion* : Which basis functions are used to represent interatomic distances. `choices = ['GaussianBasis', 'BesselBasis', 'ExpBernsteinBasis']`
 
-+ *if_exp* : The number of angular quantum numbers that spherical harmonic functions have.
++ *normalization* : Which form of normalization layers are used. `choices = ['BatchNorm', 'LayerNorm', 'PairNorm', 'InstanceNorm', 'GraphNorm', 'DiffGroupNorm', 'None']`
 
-- *normalization* : Which form of normalization layers are used. `choices = ['BatchNorm', 'LayerNorm', 'PairNorm', 'InstanceNorm', 'GraphNorm', 'DiffGroupNorm', 'None']`
-
-+ *atom_update_net* : Which form of convolutional layers to update atom features are used. `choices = ['CGConv', 'GAT', 'PAINN']`
+-*atom_update_net* : Which form of convolutional layers to update atom features are used. `choices = ['CGConv', 'GAT', 'PAINN']`
 

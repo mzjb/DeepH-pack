@@ -63,9 +63,9 @@ Prepare the Julia 1.5.4 interpreter. Install the following Julia packages requir
 
 In Linux, you can quickly achieve the requirements by first running::
 
-   # install julia 1.5.4
-   wget https://julialang-s3.julialang.org/bin/linux/x64/1.5/julia-1.5.4-linux-x86_64.tar.gz
-   tar xzvf julia-1.5.4-linux-x86_64.tar.gz
+   # install julia 1.6.6
+   wget https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.6-linux-x86_64.tar.gz
+   tar xzvf julia-1.6.6-linux-x86_64.tar.gz
 
    # open the julia REPL
    julia
