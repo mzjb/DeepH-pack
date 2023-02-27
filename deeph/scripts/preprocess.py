@@ -2,11 +2,30 @@ import os
 import subprocess as sp
 import time
 
+import numpy as np
 import argparse
 from pathos.multiprocessing import ProcessingPool as Pool
 
 from deeph import get_preprocess_config, get_rc, get_rh, abacus_parse, siesta_parse
 
+
+def collect_magmom(input_dir, output_dir, num_atom, mag_element):
+    magmom_data = np.zeros((num_atom, 4))
+
+    cmd = f'grep --text -A {num_atom + 3} "Total spin moment" {os.path.join(input_dir, "openmx.scfout")}'
+    magmom_str = os.popen(cmd).read().splitlines()
+    # print("Total local magnetic moment:", magmom_str[0].split()[4])
+
+    for index in range(num_atom):
+        line = magmom_str[3 + index].split()
+        assert line[0] == str(index + 1)
+        element_str = line[1]
+        magmom_r = line[5]
+        magmom_theta = line[6]
+        magmom_phi = line[7]
+        magmom_data[index] = int(element_str in mag_element), magmom_r, magmom_theta, magmom_phi
+
+    np.savetxt(os.path.join(output_dir, "magmom.txt"), magmom_data)
 
 def main():
     parser = argparse.ArgumentParser(description='Deep Hamiltonian')
@@ -104,6 +123,13 @@ def main():
                    r2_rand=config.getboolean('graph', 'r2_rand'),
                    create_from_DFT=config.getboolean('graph', 'create_from_DFT'), neighbour_file='hamiltonians.h5')
             get_rh(os.path.abspath(relpath), os.path.abspath(relpath), target)
+        if config.getboolean('magnetic_moment', 'parse_magnetic_moment'):
+            assert interface == 'openmx', 'Magnetic moment can only be parsed from OpenMX output for now'
+            num_atom = np.loadtxt(os.path.join(os.path.abspath(relpath), 'element.dat')).shape[0]
+            collect_magmom(
+                abspath, os.path.abspath(relpath),
+                num_atom, eval(config.get('magnetic_moment', 'magnetic_element'))
+            )
 
     begin_time = time.time()
     if multiprocessing != 0:

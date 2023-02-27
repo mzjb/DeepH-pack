@@ -88,7 +88,7 @@ pip install psutil
 with `${pytorch_config}` replaced by your own configuration. 
 You can find how to set it in [the official website of PyTorch](https://pytorch.org/get-started/previous-versions/).
 ### Julia
-Prepare the Julia 1.5.4 interpreter. Install the following Julia packages required with Julia's builtin package manager:
+Prepare the Julia 1.6.6 interpreter. Install the following Julia packages required with Julia's builtin package manager:
 - Arpack.jl
 - HDF5.jl
 - ArgParse.jl
@@ -97,12 +97,14 @@ Prepare the Julia 1.5.4 interpreter. Install the following Julia packages requir
 - IterativeSolvers.jl
 - DelimitedFiles.jl
 - StaticArrays.jl
+- LinearMaps.jl
+- Pardiso.jl
 
 In Linux, you can quickly achieve the requirements by first running
 ```bash
-# install julia 1.5.4
-wget https://julialang-s3.julialang.org/bin/linux/x64/1.5/julia-1.5.4-linux-x86_64.tar.gz
-tar xzvf julia-1.5.4-linux-x86_64.tar.gz
+# install julia 1.6.6
+wget https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.6-linux-x86_64.tar.gz
+tar xzvf julia-1.6.6-linux-x86_64.tar.gz
 
 # open the julia REPL
 julia
@@ -117,7 +119,9 @@ Then enter the pkg REPL by pressing `]` from the Julia REPL. In the pkg REPL run
 (@v1.5) pkg> add IterativeSolvers
 (@v1.5) pkg> add DelimitedFiles
 (@v1.5) pkg> add StaticArrays
+(@v1.5) pkg> add LinearMaps
 ```
+Follow [these instructions](https://github.com/JuliaSparse/Pardiso.jl#mkl-pardiso) to install Pardiso.jl.
 
 ### One of the supported DFT packages
 One of the supported DFT packages is required to obtain the dataset and

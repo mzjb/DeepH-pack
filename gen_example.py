@@ -115,7 +115,7 @@ MD.Type                           Nomd      # Nomd (SCF) / NVT_NH (MD)
     os.makedirs(f'../example/work_dir/dataset/raw/{shift_index}', exist_ok=True)
     with open(f'../example/work_dir/dataset/raw/{shift_index}/openmx_in.dat', 'w') as save_f:
         save_f.write(save_str)
-    stru_shift_pert.to('poscar', f'../example/work_dir/dataset/raw/{shift_index}/POSCAR')
+    stru_shift_pert.to(fmt='poscar', filename=f'../example/work_dir/dataset/raw/{shift_index}/POSCAR')
 
 save_str = """cd ../work_dir/dataset/raw/0
 for i in {0..575}; do
