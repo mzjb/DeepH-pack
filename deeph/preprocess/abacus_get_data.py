@@ -79,7 +79,7 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
     with open(os.path.join(input_path, data_name, log_file_name), 'r') as f:
         f.readline()
         line = f.readline()
-        assert "WELCOME TO ABACUS" in line
+        # assert "WELCOME TO ABACUS" in line
         assert find_target_line(f, "READING UNITCELL INFORMATION") is not None, 'Cannot find "READING UNITCELL INFORMATION" in log file'
         num_atom_type = int(f.readline().split()[-1])
 
