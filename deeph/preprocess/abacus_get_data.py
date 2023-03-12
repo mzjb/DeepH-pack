@@ -195,7 +195,11 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
     def parse_matrix(matrix_path, factor, spinful=False):
         matrix_dict = dict()
         with open(matrix_path, 'r') as f:
-            line = f.readline(); f.readline()
+            line = f.readline() # read "Matrix Dimension of ..."
+            if not "Matrix Dimension of" in line:
+                line = f.readline() # ABACUS >= 3.0
+                assert "Matrix Dimension of" in line
+            f.readline() # read "Matrix number of ..."
             norbits = int(line.split()[-1])
             for line in f:
                 line1 = line.split()
