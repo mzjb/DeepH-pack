@@ -40,8 +40,6 @@ The default value can be found in `DeepH-pack/deeph/inference/inference_default.
 
 + *which_k* : Define which point in k-path to calculate, start counting from 1. You can set it '0' for all k points, or '-1' for no point. It is recommended to calculate the eigenvalues of different k points in parallel through it. (Invalid for dense matrix calculation)
 
-- *lowest_band* : Find eigenvalues above *lowest_band* using shift-invert mode. (Invalid for dense matrix calculation)
+- *num_band* : The number of eigenvalues and eigenvectors desired. (Invalid for dense matrix calculation)
 
-+ *num_band* : The number of eigenvalues and eigenvectors desired. (Invalid for dense matrix calculation)
-
-- *max_iter*: Maximum number of iterations. (Invalid for dense matrix calculation)
++ *max_iter*: Maximum number of iterations. (Invalid for dense matrix calculation)
