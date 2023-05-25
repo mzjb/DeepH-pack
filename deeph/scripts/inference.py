@@ -24,6 +24,7 @@ def main():
     abacus_suffix = str(config.get('basic', 'abacus_suffix', fallback='ABACUS'))
     task = json.loads(config.get('basic', 'task'))
     assert isinstance(task, list)
+    eigen_solver = config.get('basic', 'eigen_solver')
     disable_cuda = config.getboolean('basic', 'disable_cuda')
     device = config.get('basic', 'device')
     huge_structure = config.getboolean('basic', 'huge_structure')
@@ -31,24 +32,19 @@ def main():
     gen_rc_idx = config.getboolean('basic', 'gen_rc_idx')
     gen_rc_by_idx = config.get('basic', 'gen_rc_by_idx')
     with_grad = config.getboolean('basic', 'with_grad')
-    try:
-        julia_interpreter = config.get('interpreter', 'julia_interpreter')
-    except:
-        julia_interpreter = None
-    try:
-        python_interpreter = config.get('interpreter', 'python_interpreter')
-    except:
-        python_interpreter = None
-
+    julia_interpreter = config.get('interpreter', 'julia_interpreter', fallback='')
+    python_interpreter = config.get('interpreter', 'python_interpreter', fallback='')
     radius = config.getfloat('graph', 'radius')
 
-    assert julia_interpreter or python_interpreter
-    if julia_interpreter:
-        interpreter = julia_interpreter
-        ext_file = '.jl'
-    elif python_interpreter:
-        interpreter = python_interpreter
-        ext_file = '.py'
+    if 5 in task:
+        if eigen_solver in ['sparse_jl', 'dense_jl']:
+            assert julia_interpreter, "Please specify julia_interpreter to use Julia code to calculate eigenpairs"
+        elif eigen_solver in ['dense_py']:
+            assert python_interpreter, "Please specify python_interpreter to use Python code to calculate eigenpairs"
+        else:
+            raise ValueError(f"Unknown eigen_solver: {eigen_solver}")
+    if 3 in task and not restore_blocks_py:
+        assert julia_interpreter, "Please specify julia_interpreter to use Julia code to rearrange matrix blocks"
 
     if with_grad:
         assert restore_blocks_py is True
@@ -60,18 +56,24 @@ def main():
 
 
     if not restore_blocks_py:
-        cmd3_post = f"{interpreter} " \
-                    f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'restore_blocks'+ext_file)} " \
+        cmd3_post = f"{julia_interpreter} " \
+                    f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'restore_blocks.jl')} " \
                     f"--input_dir {work_dir} --output_dir {work_dir}"
 
-    if config.getboolean('basic', 'dense_calc'):
-        cmd5 = f"{interpreter} " \
-               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'dense_calc'+ext_file)} " \
+    if eigen_solver == 'sparse_jl':
+        cmd5 = f"{julia_interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'sparse_calc.jl')} " \
+               f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
+    elif eigen_solver == 'dense_jl':
+        cmd5 = f"{julia_interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'dense_calc.jl')} " \
+               f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
+    elif eigen_solver == 'dense_py':
+        cmd5 = f"{python_interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'dense_calc.py')} " \
                f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
     else:
-        cmd5 = f"{interpreter} " \
-               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'sparse_calc'+ext_file)} " \
-               f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
+        raise ValueError(f"Unknown eigen_solver: {eigen_solver}")
 
     print(f"\n~~~~~~~ 1.parse_Overlap\n")
     print(f"\n~~~~~~~ 2.get_local_coordinate\n")

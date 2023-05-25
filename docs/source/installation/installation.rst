@@ -72,15 +72,15 @@ In Linux, you can quickly achieve the requirements by first running::
 
 Then enter the pkg REPL by pressing ``]`` from the Julia REPL. In the pkg REPL run::
 
-   (@v1.5) pkg> add Arpack
-   (@v1.5) pkg> add HDF5
-   (@v1.5) pkg> add ArgParse
-   (@v1.5) pkg> add JLD
-   (@v1.5) pkg> add JSON
-   (@v1.5) pkg> add IterativeSolvers
-   (@v1.5) pkg> add DelimitedFiles
-   (@v1.5) pkg> add StaticArrays
-   (@v1.5) pkg> add LinearMaps
+   (@v1.6) pkg> add Arpack
+   (@v1.6) pkg> add HDF5
+   (@v1.6) pkg> add ArgParse
+   (@v1.6) pkg> add JLD
+   (@v1.6) pkg> add JSON
+   (@v1.6) pkg> add IterativeSolvers
+   (@v1.6) pkg> add DelimitedFiles
+   (@v1.6) pkg> add StaticArrays
+   (@v1.6) pkg> add LinearMaps
 
 Follow `these instructions <https://github.com/JuliaSparse/Pardiso.jl#mkl-pardiso>`_ to install Pardiso.jl.
 

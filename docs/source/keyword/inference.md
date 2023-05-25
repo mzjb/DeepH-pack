@@ -16,7 +16,7 @@ The default value can be found in `DeepH-pack/deeph/inference/inference_default.
 
 + *sparse_calc_config* : The directory to the *JSON* configuration file.
 
-- *dense_calc* : Whether to replace sparse matrix calculation with dense matrix calculation.
+- *eigen_solver* : Which algorithm to use for diagonalization. Support `sparse_jl` for sparse matrix using Julia code (default), `dense_jl` for dense matrix using Julia code, and `dense_py` for dense matrix using Python code.
 
 + *huge_structure* : Whether to save your memory and cost more time during inference.
 
@@ -24,7 +24,9 @@ The default value can be found in `DeepH-pack/deeph/inference/inference_default.
 
 ## interpreter
 
-- *julia_interpreter* : The directory to the julia interpreter.
+- *julia_interpreter* : The directory to the Julia interpreter (if you want to use Julia code to perform band structure calculation or rearrange matrix blocks, you need to set it).
+
++ *python_interpreter* : The directory to the Python interpreter (if you want to use Python code to perform band structure calculation, you need to set it).
 
 ## graph
 

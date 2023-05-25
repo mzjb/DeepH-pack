@@ -46,6 +46,37 @@ For more information, see the
 }
 ```
 
+### Recent development
+```
+@article{deephe3,
+   author = {Gong, Xiaoxun and Li, He and Zou, Nianlong and Xu, Runzhang and Duan, Wenhui and Xu, Yong},
+   title = {General framework for E(3)-equivariant neural network representation of density functional theory Hamiltonian},
+   journal = {Nature Communications},
+   volume = {14},
+   number = {1},
+   pages = {2848},
+   ISSN = {2041-1723},
+   DOI = {10.1038/s41467-023-38468-8},
+   url = {https://doi.org/10.1038/s41467-023-38468-8},
+   year = {2023},
+   type = {Journal Article}
+}
+
+@article{xdeeph,
+   author = {Li, He and Tang, Zechen and Gong, Xiaoxun and Zou, Nianlong and Duan, Wenhui and Xu, Yong},
+   title = {Deep-learning electronic-structure calculation of magnetic superstructures},
+   journal = {Nature Computational Science},
+   volume = {3},
+   number = {4},
+   pages = {321-327},
+   ISSN = {2662-8457},
+   DOI = {10.1038/s43588-023-00424-3},
+   url = {https://doi.org/10.1038/s43588-023-00424-3},
+   year = {2023},
+   type = {Journal Article}
+}
+```
+
 ## Requirements
 
 To use DeepH-pack, following environments and packages are required：
@@ -111,15 +142,15 @@ julia
 ```
 Then enter the pkg REPL by pressing `]` from the Julia REPL. In the pkg REPL run
 ```julia
-(@v1.5) pkg> add Arpack
-(@v1.5) pkg> add HDF5
-(@v1.5) pkg> add ArgParse
-(@v1.5) pkg> add JLD
-(@v1.5) pkg> add JSON
-(@v1.5) pkg> add IterativeSolvers
-(@v1.5) pkg> add DelimitedFiles
-(@v1.5) pkg> add StaticArrays
-(@v1.5) pkg> add LinearMaps
+(@v1.6) pkg> add Arpack
+(@v1.6) pkg> add HDF5
+(@v1.6) pkg> add ArgParse
+(@v1.6) pkg> add JLD
+(@v1.6) pkg> add JSON
+(@v1.6) pkg> add IterativeSolvers
+(@v1.6) pkg> add DelimitedFiles
+(@v1.6) pkg> add StaticArrays
+(@v1.6) pkg> add LinearMaps
 ```
 Follow [these instructions](https://github.com/JuliaSparse/Pardiso.jl#mkl-pardiso) to install Pardiso.jl.
 
