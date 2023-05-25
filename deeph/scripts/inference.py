@@ -31,8 +31,24 @@ def main():
     gen_rc_idx = config.getboolean('basic', 'gen_rc_idx')
     gen_rc_by_idx = config.get('basic', 'gen_rc_by_idx')
     with_grad = config.getboolean('basic', 'with_grad')
-    julia_interpreter = config.get('interpreter', 'julia_interpreter')
+    try:
+        julia_interpreter = config.get('interpreter', 'julia_interpreter')
+    except:
+        julia_interpreter = None
+    try:
+        python_interpreter = config.get('interpreter', 'python_interpreter')
+    except:
+        python_interpreter = None
+
     radius = config.getfloat('graph', 'radius')
+
+    assert julia_interpreter or python_interpreter
+    if julia_interpreter:
+        interpreter = julia_interpreter
+        ext_file = '.jl'
+    elif python_interpreter:
+        interpreter = python_interpreter
+        ext_file = '.py'
 
     if with_grad:
         assert restore_blocks_py is True
@@ -42,18 +58,19 @@ def main():
     os.makedirs(work_dir, exist_ok=True)
     config.write(open(os.path.join(work_dir, 'config.ini'), "w"))
 
+
     if not restore_blocks_py:
-        cmd3_post = f"{julia_interpreter} " \
-                    f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'restore_blocks.jl')} " \
+        cmd3_post = f"{interpreter} " \
+                    f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'restore_blocks'+ext_file)} " \
                     f"--input_dir {work_dir} --output_dir {work_dir}"
 
     if config.getboolean('basic', 'dense_calc'):
-        cmd5 = f"{julia_interpreter} " \
-               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'dense_calc.jl')} " \
+        cmd5 = f"{interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'dense_calc'+ext_file)} " \
                f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
     else:
-        cmd5 = f"{julia_interpreter} " \
-               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'sparse_calc.jl')} " \
+        cmd5 = f"{interpreter} " \
+               f"{os.path.join(os.path.dirname(os.path.dirname(__file__)), 'inference', 'sparse_calc'+ext_file)} " \
                f"--input_dir {work_dir} --output_dir {work_dir} --config {config.get('basic', 'sparse_calc_config')}"
 
     print(f"\n~~~~~~~ 1.parse_Overlap\n")
