@@ -87,7 +87,8 @@ with open(os.path.join(parsed_args.input_dir, "orbital_types.dat")) as f:
     norbits = np.sum(site_norbits)
     site_norbits_cumsum = np.cumsum(site_norbits)
 
-rlat = np.loadtxt(os.path.join(parsed_args.input_dir, "rlat.dat"))
+rlat = np.loadtxt(os.path.join(parsed_args.input_dir, "rlat.dat")).T
+# the transpose is required!
 
 
 print("read h5")
@@ -175,7 +176,8 @@ if calc_job == "band":
     # output in openmx band format
     with open(os.path.join(parsed_args.output_dir, "openmx.Band"), "w") as f:
         f.write("{} {} {}\n".format(norbits, 0, ev2Hartree * fermi_level))
-        openmx_rlat = np.reshape((rlat * Bohr2Ang), (1, -1))[0]
+        openmx_rlat = np.reshape((rlat), (1, -1))[0] 
+        # The rlat is already in Ang^(-1) unit which used in openmx.Band
         f.write(std_out_array(openmx_rlat) + "\n")
         f.write(str(len(k_data)) + "\n")
         for line in k_data:
