@@ -72,7 +72,10 @@ else:
     spinful = False
 
 site_positions = np.loadtxt(os.path.join(parsed_args.input_dir, "site_positions.dat"))
-nsites = site_positions.shape[1]
+try:
+    nsites = site_positions.shape[1]
+except:
+    nsites = 1
 
 with open(os.path.join(parsed_args.input_dir, "orbital_types.dat")) as f:
     site_norbits = np.zeros(nsites, dtype=int)
