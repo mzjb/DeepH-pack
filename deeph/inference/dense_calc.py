@@ -72,7 +72,13 @@ else:
     spinful = False
 
 site_positions = np.loadtxt(os.path.join(parsed_args.input_dir, "site_positions.dat"))
-nsites = site_positions.shape[1]
+
+if len(site_position.shape) == 2:
+    nsites = site_positions.shape[1]
+else:
+    nsites = 1
+    # in case of single atom
+
 
 with open(os.path.join(parsed_args.input_dir, "orbital_types.dat")) as f:
     site_norbits = np.zeros(nsites, dtype=int)
@@ -84,7 +90,8 @@ with open(os.path.join(parsed_args.input_dir, "orbital_types.dat")) as f:
     norbits = np.sum(site_norbits)
     site_norbits_cumsum = np.cumsum(site_norbits)
 
-rlat = np.loadtxt(os.path.join(parsed_args.input_dir, "rlat.dat"))
+rlat = np.loadtxt(os.path.join(parsed_args.input_dir, "rlat.dat")).T
+# require transposition while reading rlat.dat in python
 
 
 print("read h5")
