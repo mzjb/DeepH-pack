@@ -14,7 +14,7 @@ from .graph import get_graph
 
 class HData(InMemoryDataset):
     def __init__(self, raw_data_dir: str, graph_dir: str, interface: str, target: str,
-                 dataset_name: str, multiprocessing: bool, radius, max_num_nbr,
+                 dataset_name: str, multiprocessing: int, radius, max_num_nbr,
                  num_l, max_element, create_from_DFT, if_lcmp_graph, separate_onsite, new_sp,
                  default_dtype_torch, nums: int = None, transform=None, pre_transform=None, pre_filter=None):
         """
@@ -171,12 +171,25 @@ raw_data_dir
         assert len(folder_list) != 0, "Can not find any structure"
         print('Found %d structures, have cost %d seconds' % (len(folder_list), time.time() - begin))
 
-        if self.multiprocessing:
-            print('Use multiprocessing')
-            with Pool() as pool:
-                data_list = list(tqdm.tqdm(pool.imap(self.process_worker, folder_list), total=len(folder_list)))
-        else:
+        if self.multiprocessing == 0:
+            print(f'Use multiprocessing (nodes = 1x{torch.get_num_threads()})')
+            nodes = 1
             data_list = [self.process_worker(folder) for folder in tqdm.tqdm(folder_list)]
+        else:
+            pool_dict = {} if self.multiprocessing < 0 else {'nodes': self.multiprocessing}
+            # BS (2023.06.06): 
+            # The keyword "num_threads" in kernel.py can be used to set the torch threads.
+            # The multiprocessing in the "process_worker" is in contradiction with the num_threads utilized in torch.
+            # To avoid this conflict, I limit the number of torch threads to one,
+            # and recover it when finishing the process_worker.
+            torch_num_threads = torch.get_num_threads()
+            torch.set_num_threads(1)
+
+            with Pool(**pool_dict) as pool:
+                nodes = pool.nodes
+                print(f'Use multiprocessing (nodes = {nodes}x{torch.get_num_threads()})')
+                data_list = list(tqdm.tqdm(pool.imap(self.process_worker, folder_list), total=len(folder_list)))
+            torch.set_num_threads(torch_num_threads)
         print('Finish processing %d structures, have cost %d seconds' % (len(data_list), time.time() - begin))
 
         if self.pre_filter is not None:

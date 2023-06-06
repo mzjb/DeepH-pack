@@ -291,7 +291,7 @@ class DeepHKernel:
             interface=self.config.get('basic', 'interface'),
             target=self.target,
             dataset_name=self.config.get('basic', 'dataset_name'),
-            multiprocessing=self.config.getboolean('basic', 'multiprocessing'),
+            multiprocessing=self.config.getint('basic', 'multiprocessing', fallback=0),
             radius=self.config.getfloat('graph', 'radius'),
             max_num_nbr=self.config.getint('graph', 'max_num_nbr'),
             num_l=self.config.getint('network', 'num_l'),
