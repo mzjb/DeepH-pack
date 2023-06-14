@@ -7,4 +7,4 @@ from .kernel import DeepHKernel
 from .preprocess import get_rc, OijLoad, GetEEiEij, abacus_parse, siesta_parse
 from .rotate import get_rh, rotate_back, Rotate, dtype_dict
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
