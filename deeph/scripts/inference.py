@@ -148,7 +148,7 @@ def main():
         print(f"\n####### Begin 5.sparse_calc")
         capture_output = sp.run(cmd5, shell=True, capture_output=False, encoding="utf-8")
         assert capture_output.returncode == 0
-        if not config.getboolean('basic', 'dense_calc'):
+        if eigen_solver in ['sparse_jl']:
             assert os.path.exists(os.path.join(work_dir, "sparse_matrix.jld"))
         print('\n******* Finish 5.sparse_calc, cost %d seconds\n' % (time.time() - begin))
 
