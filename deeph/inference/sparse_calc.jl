@@ -387,17 +387,6 @@ function main()
                 # egval = real(eigs(H_k, S_k, nev=num_band, sigma=(fermi_level + lowest_band), which=:LR, ritzvec=false, maxiter=max_iter)[1])
             end
             egvals[:, idx_k] = egval
-            if which_k == 0
-                # println(egval .- fermi_level)
-            else
-                open(joinpath(parsed_args["output_dir"], "kpoint.dat"), "w") do f
-                    writedlm(f, [kx, ky, kz])
-                end
-                open(joinpath(parsed_args["output_dir"], "egval.dat"), "w") do f
-                    writedlm(f, egval)
-                end
-            end
-            egvals[:, idx_k] = egval
             println("Time for solving No.$idx_k eigenvalues at k = ", [kx, ky, kz], ": ", time() - begin_time, "s")
         end
 
