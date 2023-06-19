@@ -172,8 +172,7 @@ raw_data_dir
         print('Found %d structures, have cost %d seconds' % (len(folder_list), time.time() - begin))
 
         if self.multiprocessing == 0:
-            print(f'Use multiprocessing (nodes = 1x{torch.get_num_threads()})')
-            nodes = 1
+            print(f'Use multiprocessing (nodes = num_processors x num_threads = 1 x {torch.get_num_threads()})')
             data_list = [self.process_worker(folder) for folder in tqdm.tqdm(folder_list)]
         else:
             pool_dict = {} if self.multiprocessing < 0 else {'nodes': self.multiprocessing}
@@ -187,7 +186,7 @@ raw_data_dir
 
             with Pool(**pool_dict) as pool:
                 nodes = pool.nodes
-                print(f'Use multiprocessing (nodes = {nodes}x{torch.get_num_threads()})')
+                print(f'Use multiprocessing (nodes = num_processors x num_threads = {nodes} x {torch.get_num_threads()})')
                 data_list = list(tqdm.tqdm(pool.imap(self.process_worker, folder_list), total=len(folder_list)))
             torch.set_num_threads(torch_num_threads)
         print('Finish processing %d structures, have cost %d seconds' % (len(data_list), time.time() - begin))
