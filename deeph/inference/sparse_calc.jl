@@ -170,12 +170,12 @@ function main()
             hamiltonian_pred = hamiltonians_pred[key]
             if (key ∈ keys(overlaps))
                 overlap = overlaps[key]
+                if spinful
+                    overlap = vcat(hcat(overlap,zeros(size(overlap))),hcat(zeros(size(overlap)),overlap)) # the readout overlap matrix only contains the upper-left block # TODO maybe drop the zeros?
+                end
             else
                 # continue
                 overlap = zero(hamiltonian_pred)
-            end
-            if spinful
-                overlap = vcat(hcat(overlap,zeros(size(overlap))),hcat(zeros(size(overlap)),overlap)) # the readout overlap matrix only contains the upper-left block # TODO maybe drop the zeros?
             end
             R = key[1:3]; atom_i=key[4]; atom_j=key[5]
 
