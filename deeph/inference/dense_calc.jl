@@ -78,8 +78,6 @@ function main()
     println(parsed_args["config"])
     config = JSON.parsefile(parsed_args["config"])
     calc_job = config["calc_job"]
-    ill_project = parsed_args["ill_project"]
-    ill_threshold = parsed_args["ill_threshold"]
 
     if isfile(joinpath(parsed_args["input_dir"],"info.json"))
         spinful = JSON.parsefile(joinpath(parsed_args["input_dir"],"info.json"))["isspinful"]
@@ -150,6 +148,9 @@ function main()
         fermi_level = config["fermi_level"]
         k_data = config["k_data"]
 
+        ill_project = parsed_args["ill_project"] || ("ill_project" in keys(config) && config["ill_project"])
+        ill_threshold = max(parsed_args["ill_threshold"], get(config, "ill_threshold", 0.))
+        
         @info "calculate bands"
         num_ks = k_data2num_ks.(k_data)
         kpaths = k_data2kpath.(k_data)

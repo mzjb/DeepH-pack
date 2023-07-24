@@ -20,6 +20,16 @@ def parse_commandline():
         "--config", type=str,
         help="config file in the format of JSON"
     )
+    parser.add_argument(
+        "--ill_project", type=bool,
+        help="projects out the eigenvectors of the overlap matrix that correspond to eigenvalues smaller than ill_threshold",
+        default=True
+    )
+    parser.add_argument(
+        "--ill_threshold", type=float,
+        help="threshold for ill_project",
+        default=5e-4
+    )
     return parser.parse_args()
 
 parsed_args = parse_commandline()
@@ -73,7 +83,7 @@ else:
 
 site_positions = np.loadtxt(os.path.join(parsed_args.input_dir, "site_positions.dat"))
 
-if len(site_position.shape) == 2:
+if len(site_positions.shape) == 2:
     nsites = site_positions.shape[1]
 else:
     nsites = 1
@@ -144,6 +154,8 @@ print("Time for constructing Hamiltonian and overlap matrix in the real space: "
 if calc_job == "band":
     fermi_level = config["fermi_level"]
     k_data = config["k_data"]
+    ill_project = parsed_args.ill_project or ("ill_project" in config.keys() and config["ill_project"])
+    ill_threshold = max(parsed_args.ill_threshold, config["ill_threshold"] if ("ill_threshold" in config.keys()) else 0.)
 
     print("calculate bands")
     num_ks = [k_data2num_ks(k) for k in k_data]
@@ -160,17 +172,36 @@ if calc_job == "band":
         kys = np.linspace(kpath[1], kpath[4], pnkpts)
         kzs = np.linspace(kpath[2], kpath[5], pnkpts)
         for kx, ky, kz in zip(kxs, kys, kzs):
-            H_k = np.zeros((norbits, norbits), dtype=default_dtype)
-            S_k = np.zeros((norbits, norbits), dtype=default_dtype)
+            H_k = np.matrix(np.zeros((norbits, norbits), dtype=default_dtype))
+            S_k = np.matrix(np.zeros((norbits, norbits), dtype=default_dtype))
             for R in H_R.keys():
                 H_k += H_R[R] * np.exp(1j*2*np.pi*np.dot([kx, ky, kz], R))
                 S_k += S_R[R] * np.exp(1j*2*np.pi*np.dot([kx, ky, kz], R))
-            #---------------------------------------------
-            # BS: only eigenvalues are needed in this part, 
-            # the upper matrix is used
-            #
-            # egval, egvec = linalg.eig(H_k, S_k)
-            egval = linalg.eigvalsh(H_k, S_k, lower=False)
+                # print(H_k)
+            H_k = (H_k + H_k.getH())/2.
+            S_k = (S_k + S_k.getH())/2.
+            if ill_project:
+                egval_S, egvec_S = linalg.eig(S_k)
+                project_index = np.argwhere(abs(egval_S)> config["ill_threshold"])
+                if len(project_index) != norbits:
+                    # egval_S = egval_S[project_index]
+                    egvec_S = np.matrix(egvec_S[:, project_index])
+                    print(f"ill-conditioned eigenvalues detected, projected out {norbits - len(project_index)} eigenvalues")
+                    # egval = linalg.eigvalsh(H_k, S_k, lower=False)
+                    # egvalm =  np.diag(egval)
+                    # egvalm = egvec_S.H @ egvalm @ egvec_S
+                    # egval = np.diagonal(egvalm)
+                    H_k = egvec_S.H @ H_k @ egvec_S
+                    S_k = egvec_S.H @ S_k @ egvec_S
+                    egval = linalg.eigvalsh(H_k, S_k, lower=False)
+                    egval = np.concatenate([egval, np.full(norbits - len(project_index), 1e4)])
+                else:
+                    egval = linalg.eigvalsh(H_k, S_k, lower=False)
+            else:
+                #---------------------------------------------
+                # BS: only eigenvalues are needed in this part, 
+                # the upper matrix is used
+                egval = linalg.eigvalsh(H_k, S_k, lower=False)
             egvals[:, idx_k] = egval
 
             print("Time for solving No.{} eigenvalues at k = {} : {} s".format(idx_k+1, [kx, ky, kz], time() - begin_time))
