@@ -5,6 +5,8 @@ import numpy as np
 import os
 from time import time
 from scipy import linalg 
+import tqdm
+from pathos.multiprocessing import ProcessingPool as Pool
 
 def parse_commandline():
     parser = argparse.ArgumentParser()
@@ -29,6 +31,11 @@ def parse_commandline():
         "--ill_threshold", type=float,
         help="threshold for ill_project",
         default=5e-4
+    )
+    parser.add_argument(
+        "--multiprocessing", type=int,
+        help="multiprocessing for band calculation",
+        default=0
     )
     return parser.parse_args()
 
@@ -156,6 +163,7 @@ if calc_job == "band":
     k_data = config["k_data"]
     ill_project = parsed_args.ill_project or ("ill_project" in config.keys() and config["ill_project"])
     ill_threshold = max(parsed_args.ill_threshold, config["ill_threshold"] if ("ill_threshold" in config.keys()) else 0.)
+    multiprocessing = max(parsed_args.multiprocessing, config["multiprocessing"] if ("multiprocessing" in config.keys()) else 0)
 
     print("calculate bands")
     num_ks = [k_data2num_ks(k) for k in k_data]
@@ -165,47 +173,86 @@ if calc_job == "band":
 
     begin_time = time()
     idx_k = 0
-    for i in range(len(kpaths)):
-        kpath = kpaths[i]
-        pnkpts = num_ks[i]
-        kxs = np.linspace(kpath[0], kpath[3], pnkpts)
-        kys = np.linspace(kpath[1], kpath[4], pnkpts)
-        kzs = np.linspace(kpath[2], kpath[5], pnkpts)
-        for kx, ky, kz in zip(kxs, kys, kzs):
-            H_k = np.matrix(np.zeros((norbits, norbits), dtype=default_dtype))
-            S_k = np.matrix(np.zeros((norbits, norbits), dtype=default_dtype))
-            for R in H_R.keys():
-                H_k += H_R[R] * np.exp(1j*2*np.pi*np.dot([kx, ky, kz], R))
-                S_k += S_R[R] * np.exp(1j*2*np.pi*np.dot([kx, ky, kz], R))
-                # print(H_k)
-            H_k = (H_k + H_k.getH())/2.
-            S_k = (S_k + S_k.getH())/2.
-            if ill_project:
-                egval_S, egvec_S = linalg.eig(S_k)
-                project_index = np.argwhere(abs(egval_S)> ill_threshold)
-                if len(project_index) != norbits:
-                    # egval_S = egval_S[project_index]
-                    egvec_S = np.matrix(egvec_S[:, project_index])
-                    print(f"ill-conditioned eigenvalues detected, projected out {norbits - len(project_index)} eigenvalues")
-                    # egval = linalg.eigvalsh(H_k, S_k, lower=False)
-                    # egvalm =  np.diag(egval)
-                    # egvalm = egvec_S.H @ egvalm @ egvec_S
-                    # egval = np.diagonal(egvalm)
-                    H_k = egvec_S.H @ H_k @ egvec_S
-                    S_k = egvec_S.H @ S_k @ egvec_S
-                    egval = linalg.eigvalsh(H_k, S_k, lower=False)
-                    egval = np.concatenate([egval, np.full(norbits - len(project_index), 1e4)])
-                else:
-                    egval = linalg.eigvalsh(H_k, S_k, lower=False)
-            else:
-                #---------------------------------------------
-                # BS: only eigenvalues are needed in this part, 
-                # the upper matrix is used
-                egval = linalg.eigvalsh(H_k, S_k, lower=False)
-            egvals[:, idx_k] = egval
+    # calculate total k points
+    total_num_ks = sum(num_ks)
+    list_index_kpath= []
+    list_index_kxyz=[]
+    for i in range(len(num_ks)):
+        list_index_kpath = list_index_kpath + ([i]*num_ks[i])
+        list_index_kxyz.extend(range(num_ks[i]))
 
-            print("Time for solving No.{} eigenvalues at k = {} : {} s".format(idx_k+1, [kx, ky, kz], time() - begin_time))
-            idx_k += 1
+    def process_worker(k_point):
+        """ calculate band 
+
+        Args:
+            k_point (int): the index of k point of all calculated k points
+
+        Returns:
+            json: {
+                "k_point":k_point, 
+                "egval" (np array 1D) : eigen value , 
+                "num_projected_out" (int) :  ill-conditioned eigenvalues detected。 default is 0
+                }
+        """
+        index_kpath = list_index_kpath[k_point]
+        kpath = kpaths[index_kpath]
+        pnkpts = num_ks[index_kpath]
+        kx = np.linspace(kpath[0], kpath[3], pnkpts)[list_index_kxyz[k_point]]
+        ky = np.linspace(kpath[1], kpath[4], pnkpts)[list_index_kxyz[k_point]]
+        kz = np.linspace(kpath[2], kpath[5], pnkpts)[list_index_kxyz[k_point]]
+
+        H_k = np.matrix(np.zeros((norbits, norbits), dtype=default_dtype))
+        S_k = np.matrix(np.zeros((norbits, norbits), dtype=default_dtype))
+        for R in H_R.keys():
+            H_k += H_R[R] * np.exp(1j*2*np.pi*np.dot([kx, ky, kz], R))
+            S_k += S_R[R] * np.exp(1j*2*np.pi*np.dot([kx, ky, kz], R))
+            # print(H_k)
+        H_k = (H_k + H_k.getH())/2.
+        S_k = (S_k + S_k.getH())/2.
+        num_projected_out = 0
+        if ill_project:
+            egval_S, egvec_S = linalg.eig(S_k)
+            project_index = np.argwhere(abs(egval_S)> ill_threshold)
+            if len(project_index) != norbits:
+                egvec_S = np.matrix(egvec_S[:, project_index])
+                num_projected_out = norbits - len(project_index)
+                H_k = egvec_S.H @ H_k @ egvec_S
+                S_k = egvec_S.H @ S_k @ egvec_S
+                egval = linalg.eigvalsh(H_k, S_k, lower=False)
+                egval = np.concatenate([egval, np.full(num_projected_out, 1e4)])
+            else:
+                egval = linalg.eigvalsh(H_k, S_k, lower=False)
+        else:
+            #---------------------------------------------
+            # BS: only eigenvalues are needed in this part, 
+            # the upper matrix is used
+            egval = linalg.eigvalsh(H_k, S_k, lower=False) 
+
+        return {"k_point":k_point, "egval":egval, "num_projected_out":num_projected_out}
+    
+    # parallizing the band calculation
+    if multiprocessing == 0:
+        print(f'No use of multiprocessing')
+        data_list = [process_worker(k_point) for k_point in tqdm.tqdm(range(sum(num_ks)))]
+    else:
+        pool_dict = {} if multiprocessing < 0 else {'nodes': multiprocessing}
+
+        with Pool(**pool_dict) as pool:
+            nodes = pool.nodes
+            print(f'Use multiprocessing x {multiprocessing})')
+            data_list = list(tqdm.tqdm(pool.imap(process_worker, range(sum(num_ks))), total=sum(num_ks)))
+    
+    # post-process returned band data, and store them in egvals with the order k_point
+    projected_out = []
+    for data in data_list:
+        egvals[:, data["k_point"]] = data["egval"]
+        if data["num_projected_out"] > 0:
+            projected_out.append(data["num_projected_out"])
+    if len(projected_out) > 0:
+        print(f"There are {len(projected_out)} bands with ill-conditioned eigenvalues detected.")
+        print(f"Projected out {int(np.average(projected_out))} eigenvalues on average.")
+    print('Finish the calculation of %d k-points, have cost %d seconds' % (sum(num_ks), time() - begin_time))
+
 
     # output in openmx band format
     with open(os.path.join(parsed_args.output_dir, "openmx.Band"), "w") as f:
