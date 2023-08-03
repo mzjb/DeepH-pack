@@ -182,7 +182,7 @@ if calc_job == "band":
             S_k = (S_k + S_k.getH())/2.
             if ill_project:
                 egval_S, egvec_S = linalg.eig(S_k)
-                project_index = np.argwhere(abs(egval_S)> config["ill_threshold"])
+                project_index = np.argwhere(abs(egval_S)> ill_threshold)
                 if len(project_index) != norbits:
                     # egval_S = egval_S[project_index]
                     egvec_S = np.matrix(egvec_S[:, project_index])
