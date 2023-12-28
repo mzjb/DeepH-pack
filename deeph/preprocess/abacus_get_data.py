@@ -6,6 +6,7 @@
 # 20220717: Read structure from running_scf.log
 # 20220919: The suffix of the output sub-directories (OUT.suffix) can be set by ["basic"]["abacus_suffix"] keyword in preprocess.ini
 # 20220920: Supporting cartesian coordinates in the log file
+# 20231228: Supporting ABACUS v3.4
 
 import os
 import sys
@@ -152,7 +153,6 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
         if coords_type == "cartesian":
             frac_coords = frac_coords @ np.matrix(lattice).I
         lattice = lattice * lattice_constant
-
         if only_S:
             spinful = False
         else:
@@ -164,10 +164,10 @@ def abacus_parse(input_path, output_path, data_name, only_S=False, get_r=False):
                 spinful = True
             else:
                 raise ValueError(f'{line} is not supported')
-
-        if only_S:
-            fermi_level = 0.0
-        else:
+    if only_S:
+        fermi_level = 0.0
+    else:
+        with open(os.path.join(input_path, data_name, log_file_name), 'r') as f:
             line = find_target_line(f, "EFERMI")
             assert line is not None, 'Cannot find "EFERMI" in log file'
             assert "eV" in line
