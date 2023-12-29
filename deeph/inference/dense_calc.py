@@ -73,7 +73,7 @@ else:
 
 site_positions = np.loadtxt(os.path.join(parsed_args.input_dir, "site_positions.dat"))
 
-if len(site_position.shape) == 2:
+if len(site_positions.shape) == 2:
     nsites = site_positions.shape[1]
 else:
     nsites = 1
