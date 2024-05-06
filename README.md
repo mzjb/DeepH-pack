@@ -160,11 +160,7 @@ calculate the overlap matrix for large-scale material systems.
 DeepH-pack supports DFT results made by ABACUS, OpenMX, FHI-aims
 or SIESTA and will support HONPAS soon.
 
-1. **ABACUS**: Install [ABACUS package](https://abacus.ustc.edu.cn)
-    for density functional theory Hamiltonian matrix calculation to
-    construct datasets. DeepH-pack requires
-    [ABACUS version >= 2.3.2](https://github.com/deepmodeling/abacus-develop/releases/tag/v2.3.2).
-2. **OpenMX**:
+1. **OpenMX**:
     1. Install [OpenMX package version 3.9](http://www.openmx-square.org/download.html) for density functional theory Hamiltonian matrix calculation to construct datasets.
         If you are using Intel MKL and Intel MPI environments, you can use the following variable definitions for makefile
         ```
@@ -174,10 +170,16 @@ or SIESTA and will support HONPAS soon.
         ```
         Or edit the makefile yourself according to your environment to install OpenMX version 3.9.
     2. A modified OpenMX package is also used to compute overlap matrices only for large-scale materials structure. Install 'overlap only' OpenMX according to the *readme* documentation in this [repository](https://github.com/mzjb/overlap-only-OpenMX).
-3. **SIESTA**:
+2. **SIESTA**:
     Install [SIESTA package](https://gitlab.com/siesta-project/siesta) for
     density functional theory Hamiltonian matrix calculation to construct
     datasets. DeepH-pack requires SIESTA version >= 4.1.5.
+3. **ABACUS**: Install [ABACUS package](https://abacus.ustc.edu.cn)
+    for density functional theory Hamiltonian matrix calculation to
+    construct datasets. DeepH-pack requires
+    [ABACUS version >= 2.3.2](https://github.com/deepmodeling/abacus-develop/releases/tag/v2.3.2).
+    *Note added: the DeepH-ABACUS interface currently suffers from bug regarding the sparsity pattern of ABACUS's overlap matrix, which may cause errors in DeepH prediction. We're currently working on this issue, and this note will be removed once a fix is ready.*
+
 ## Usage
 
 ### Install DeepH-pack
@@ -358,7 +360,7 @@ for details.
    mzjb313 [at] gmail [dot] com
 
 + **Zechen Tang**
-   
+  
     Tsinghua University
 
 #### Collaborators
