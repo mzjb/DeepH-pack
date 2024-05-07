@@ -22,7 +22,7 @@ keywords like this::
 
     out_mat_hs2   1
 
-Note added: the DeepH-ABACUS interface currently suffers from bug regarding the sparsity pattern of ABACUS's overlap matrix, which may cause errors in DeepH prediction. We're currently working on this issue, and this note will be removed once a fix is ready.
+*Note added: the DeepH-ABACUS interface currently suffers from bug regarding the sparsity pattern of ABACUS's overlap matrix, which may cause errors in DeepH prediction. We're currently working on this issue, and this note will be removed once a fix is ready.*
 
 Using OpenMX
 ^^^^^^^^^^^^^^^^^^^^^^^^
