@@ -27,33 +27,46 @@ def collect_magmom_from_openmx(input_dir, output_dir, num_atom, mag_element):
 
     np.savetxt(os.path.join(output_dir, "magmom.txt"), magmom_data)
 
-def collect_magmom_from_abacus(input_dir, output_dir, num_atom, mag_element):
+def collect_magmom_from_abacus(input_dir, output_dir, abacus_suffix, num_atom, mag_element): #to use this feature, be sure to turn out_chg and out_mul in abacus INPUT file, if not, will use mag setting in STRU file, and this may loss accuracy or incorrect
     magmom_data = np.zeros((num_atom, 4))
-    index_atom = 0
 
-    with open(os.path.join(input_dir, "STRU"), 'r') as file:
-        lines = file.readlines()
-        for k in range(len(lines)): # k = line index
-            if lines[k].strip() == 'ATOMIC_POSITIONS':
-                kk = k + 2 # kk = current line index
-                while kk < len(lines):
-                    if lines[kk] == "\n": # for if empty line between two elements, as ABACUS accepts
-                        continue
-                    element_str = lines[kk].strip()
-                    element_amount = int(lines[kk + 2].strip())
-                    for j in range(element_amount):
-                        line = lines[kk + 3 + j].strip().split()
-                        if len(line) < 11: # check if magmom is included
-                            raise ValueError('this line do not contain magmom: {} in this file: {}'.format(line, input_dir))
-                        if line[7] != "angle1" and line[8] != "angle1": # check if magmom is in angle mode
-                            raise ValueError('mag in STRU should be mag * angle1 * angle2 *')
-                        if line[6] == "mag": # for if 'm' is included
-                            index_str = 7
-                        else:
-                            index_str = 8
-                        magmom_data[index_atom] = int(element_str in mag_element), line[index_str], line[index_str + 2], line[index_str + 4]
-                        index_atom += 1
-                    kk += 3 + element_amount
+    # using running_scf.log file with INPUT file out_chg and out_mul == 1
+    cmd = f"grep 'Total Magnetism' {os.path.join(input_dir, 'OUT.' + abacus_suffix, 'running_scf.log')}"
+    datas = os.popen(cmd).read().strip().splitlines()
+    if datas:
+        for index, data in enumerate(datas):
+            element_str = data.split()[4]
+            x, y, z = map(float, data.split('(')[-1].split(')')[0].split(','))
+            vector = np.array([x, y, z])
+            r = np.linalg.norm(vector)
+            theta = np.degrees(np.arctan2(vector[1], vector[0]))
+            phi = np.degrees(np.arccos(vector[2] / r))
+            magmom_data[index] = int(element_str in mag_element), r, theta, phi
+    else: # using STRU file magmom setting, THIS MAY CAUSE WRONG OUTPUT!
+        index_atom = 0
+        with open(os.path.join(input_dir, "STRU"), 'r') as file:
+            lines = file.readlines()
+            for k in range(len(lines)): # k = line index
+                if lines[k].strip() == 'ATOMIC_POSITIONS':
+                    kk = k + 2 # kk = current line index
+                    while kk < len(lines):
+                        if lines[kk] == "\n": # for if empty line between two elements, as ABACUS accepts
+                            continue
+                        element_str = lines[kk].strip()
+                        element_amount = int(lines[kk + 2].strip())
+                        for j in range(element_amount):
+                            line = lines[kk + 3 + j].strip().split()
+                            if len(line) < 11: # check if magmom is included
+                                raise ValueError('this line do not contain magmom: {} in this file: {}'.format(line, input_dir))
+                            if line[7] != "angle1" and line[8] != "angle1": # check if magmom is in angle mode
+                                raise ValueError('mag in STRU should be mag * angle1 * angle2 *')
+                            if line[6] == "mag": # for if 'm' is included
+                                index_str = 7
+                            else:
+                                index_str = 8
+                            magmom_data[index_atom] = int(element_str in mag_element), line[index_str], line[index_str + 2], line[index_str + 4]
+                            index_atom += 1
+                        kk += 3 + element_amount
 
     np.savetxt(os.path.join(output_dir, "magmom.txt"), magmom_data)
 
@@ -161,7 +174,7 @@ def main():
                     num_atom, eval(config.get('magnetic_moment', 'magnetic_element')))
             elif interface == 'abacus':
                 collect_magmom_from_abacus(
-                    abspath, os.path.abspath(relpath),
+                    abspath, os.path.abspath(relpath), abacus_suffix,
                     num_atom, eval(config.get('magnetic_moment', 'magnetic_element')))
             else:
             	raise ValueError('Magnetic moment can only be parsed from OpenMX or ABACUS output for now, but your interface is {}'.format(interface))
