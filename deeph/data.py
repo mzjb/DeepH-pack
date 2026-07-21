@@ -105,7 +105,19 @@ raw_data_dir
             loaded_data = torch.load(self.data_file)
         except AttributeError:
             raise RuntimeError('Error in loading graph data file, try to delete it and generate the graph file with the current version of PyG')
-        if len(loaded_data) == 2:
+        if isinstance(loaded_data, tuple) and len(loaded_data) == 2 and isinstance(loaded_data[0], list):
+            # New format: (data_list, info) — collate now at load time
+            data_list, tmp = loaded_data
+            print(f'Collating {len(data_list)} graph structures on load...')
+            import gc as _gc
+            _gc.collect()
+            self.data, self.slices = self.collate(data_list)
+            self.info = tmp
+            # Free data_list AFTER collation
+            del data_list
+            _gc.collect()
+            print(f'Collation done. Atomic types: {self.info["index_to_Z"].tolist()}')
+        elif len(loaded_data) == 2:
             warnings.warn('You are using the graph data file with an old version')
             self.data, self.slices = loaded_data
             self.info = {
@@ -168,27 +180,28 @@ raw_data_dir
             folder_list = folder_list[500:5000:3]
         if self.dataset_name == 'bp_bilayer':
             folder_list = folder_list[:600]
+        if 'C2N' in self.dataset_name:
+            # P0 optimization: use 600 structures (proven stable)
+            folder_list = folder_list[:600]
+            print(f'Dataset {self.dataset_name}: using {len(folder_list)} structures')
         assert len(folder_list) != 0, "Can not find any structure"
         print('Found %d structures, have cost %d seconds' % (len(folder_list), time.time() - begin))
 
+        import gc as _gc
+
+        # Phase 1: Process all structures using ONE pool (proven to reach 100%)
         if self.multiprocessing == 0:
-            print(f'Use multiprocessing (nodes = num_processors x num_threads = 1 x {torch.get_num_threads()})')
-            data_list = [self.process_worker(folder) for folder in tqdm.tqdm(folder_list)]
+            print(f'Use multiprocessing (1 x {torch.get_num_threads()})')
+            data_list = [self.process_worker(f) for f in tqdm.tqdm(folder_list)]
         else:
             pool_dict = {} if self.multiprocessing < 0 else {'nodes': self.multiprocessing}
-            # BS (2023.06.06): 
-            # The keyword "num_threads" in kernel.py can be used to set the torch threads.
-            # The multiprocessing in the "process_worker" is in contradiction with the num_threads utilized in torch.
-            # To avoid this conflict, I limit the number of torch threads to one,
-            # and recover it when finishing the process_worker.
-            torch_num_threads = torch.get_num_threads()
+            torch_num_threads_saved = torch.get_num_threads()
             torch.set_num_threads(1)
-
             with Pool(**pool_dict) as pool:
-                nodes = pool.nodes
-                print(f'Use multiprocessing (nodes = num_processors x num_threads = {nodes} x {torch.get_num_threads()})')
+                print(f'Use multiprocessing (nodes = {pool.nodes} x {torch.get_num_threads()})')
                 data_list = list(tqdm.tqdm(pool.imap(self.process_worker, folder_list), total=len(folder_list)))
-            torch.set_num_threads(torch_num_threads)
+            torch.set_num_threads(torch_num_threads_saved)
+
         print('Finish processing %d structures, have cost %d seconds' % (len(data_list), time.time() - begin))
 
         if self.pre_filter is not None:
@@ -196,15 +209,19 @@ raw_data_dir
         if self.pre_transform is not None:
             data_list = [self.pre_transform(d) for d in data_list]
 
+        # Force GC to recover pool worker memory
+        _gc.collect()
+        print('Memory after GC: data_list has %d structures' % len(data_list))
+
+        # Compute global metadata — must process ALL data to remap element indices
         index_to_Z, Z_to_index = self.element_statistics(data_list)
         spinful = data_list[0].spinful
         for d in data_list:
             assert spinful == d.spinful
 
-        data, slices = self.collate(data_list)
-        torch.save((data, slices, dict(spinful=spinful, index_to_Z=index_to_Z, Z_to_index=Z_to_index)), self.data_file)
-        print('Finish saving %d structures to %s, have cost %d seconds' % (
-        len(data_list), self.data_file, time.time() - begin))
+        # Save data_list directly (collation happens at load time)
+        torch.save((data_list, dict(spinful=spinful, index_to_Z=index_to_Z, Z_to_index=Z_to_index)), self.data_file)
+        print(f'Finish saving {len(data_list)} structures to {self.data_file}, cost {time.time()-begin:.0f}s')
 
     def element_statistics(self, data_list):
         index_to_Z, inverse_indices = torch.unique(data_list[0].x, sorted=True, return_inverse=True)
