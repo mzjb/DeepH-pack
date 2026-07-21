@@ -118,7 +118,7 @@ def main():
 
         label = batch.label
         mask = batch.mask
-        output = output.cpu().reshape(label.shape)
+        output = output.reshape(label.shape).to(label.device)
 
         assert label.shape == output.shape == mask.shape
         mse = torch.pow(label - output, 2)

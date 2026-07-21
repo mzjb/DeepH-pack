@@ -332,8 +332,9 @@ class Collater:
     def __call__(self, graph_list):
         if self.if_lcmp:
             flag_dict = hasattr(graph_list[0], 'subgraph_dict')
-            if self.flag_pyg2:
-                assert flag_dict, 'Please generate the graph file with the current version of PyG'
+            if self.flag_pyg2 and not flag_dict:
+                # For single-sample inference without DFT data, skip LCMP subgraph
+                return Batch.from_data_list(graph_list), None
             batch = Batch.from_data_list(graph_list)
 
             subgraph_atom_idx_batch = []

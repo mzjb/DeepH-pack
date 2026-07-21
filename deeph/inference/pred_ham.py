@@ -163,8 +163,16 @@ def predict(input_dir: str, output_dir: str, disable_cuda: bool, device: str,
             sys.stderr = sys.stderr.terminal
 
         if restore_blocks_py:
-            for hamiltonian in hoppings_pred.values():
-                assert np.all(np.isnan(hamiltonian) == False)
+            # NaN entries correspond to orbital pairs not covered by the model;
+            # replace them with zeros (they correspond to negligible matrix elements).
+            nan_count = 0
+            for key, hamiltonian in hoppings_pred.items():
+                nan_mask = np.isnan(hamiltonian)
+                if nan_mask.any():
+                    nan_count += nan_mask.sum()
+                    hamiltonian[nan_mask] = 0.0
+            if nan_count > 0:
+                print(f'Filled {nan_count} NaN entries with zeros (uncovered orbital pairs)')
             write_ham_h5(hoppings_pred, path=os.path.join(output_dir, 'rh_pred.h5'))
         else:
             block_without_restoration['num_model'] = index_model

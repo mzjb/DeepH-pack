@@ -2,7 +2,10 @@ from typing import Optional
 
 import torch
 from torch import Tensor
-from torch_scatter import scatter_mean
+try:
+    from torch_scatter import scatter_mean
+except ImportError:
+    from ..compat_scatter import scatter_mean
 
 from torch_geometric.nn.inits import zeros, ones
 
