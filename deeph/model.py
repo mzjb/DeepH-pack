@@ -11,7 +11,10 @@ from torch_geometric.typing import PairTensor, Adj, OptTensor, Size
 from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.utils import softmax
 from torch_geometric.nn.models.dimenet import BesselBasisLayer
-from torch_scatter import scatter_add, scatter
+try:
+    from torch_scatter import scatter_add, scatter
+except ImportError:
+    from .compat_scatter import scatter_add, scatter
 import numpy as np
 from scipy.special import comb
 
@@ -141,7 +144,7 @@ class CGConv(MessagePassing):
         if isinstance(x, torch.Tensor):
             x: PairTensor = (x, x)
 
-        # propagate_type: (x: PairTensor, edge_attr: OptTensor)
+        # propagate_type: (x: PairTensor, edge_attr: OptTensor, distance: Tensor)
         out = self.propagate(edge_index, x=x, edge_attr=edge_attr, distance=distance, size=size)
         if self.normalization == 'BatchNorm':
             out = self.bn(out)

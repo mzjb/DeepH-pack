@@ -19,7 +19,10 @@ from torch.optim.lr_scheduler import MultiStepLR, ReduceLROnPlateau, CyclicLR
 from torch.utils.data import SubsetRandomSampler, DataLoader
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.tensorboard import SummaryWriter
-from torch_scatter import scatter_add
+try:
+    from torch_scatter import scatter_add
+except ImportError:
+    from .compat_scatter import scatter_add
 import numpy as np
 from psutil import cpu_count
 
@@ -372,6 +375,8 @@ class DeepHKernel:
     def make_mask(self, dataset):
         dataset_mask = []
         for data in dataset:
+            # FIX: Don't move entire data to GPU to avoid OOM
+            # Only individual tensors will be moved as needed
             if self.target == 'hamiltonian' or self.target == 'phiVdphi' or self.target == 'density_matrix':
                 Oij_value = data.term_real
                 if data.term_real is not None:
@@ -406,11 +411,18 @@ class DeepHKernel:
                     out_fea_len = self.num_orbital * 3
                 else:
                     out_fea_len = self.num_orbital
-            mask = torch.zeros(data.edge_attr.shape[0], out_fea_len, dtype=torch.int8)
-            label = torch.zeros(data.edge_attr.shape[0], out_fea_len, dtype=torch.get_default_dtype())
+            mask = torch.zeros(data.edge_attr.shape[0], out_fea_len, dtype=torch.int8, device=self.device)
+            label = torch.zeros(data.edge_attr.shape[0], out_fea_len, dtype=torch.get_default_dtype(), device=self.device)
 
-            atomic_number_edge_i = self.index_to_Z[data.x[data.edge_index[0]]]
-            atomic_number_edge_j = self.index_to_Z[data.x[data.edge_index[1]]]
+            idx_to_Z = self.index_to_Z.to(self.device)
+            x_gpu = data.x.to(self.device)
+            edge_index_gpu = data.edge_index.to(self.device)
+            atomic_number_edge_i = idx_to_Z[x_gpu[edge_index_gpu[0]]]
+            atomic_number_edge_j = idx_to_Z[x_gpu[edge_index_gpu[1]]]
+
+            # Move Oij to GPU for computation
+            if if_only_rc == False:
+                Oij_value = Oij_value.to(self.device)
 
             for index_out, orbital_dict in enumerate(self.orbital):
                 for N_M_str, a_b in orbital_dict.items():
@@ -453,7 +465,7 @@ class DeepHKernel:
                                     (atomic_number_edge_i == condition_atomic_number_i)
                                     & (atomic_number_edge_j == condition_atomic_number_j),
                                     Oij_value[:, condition_orbital_i, condition_orbital_j].t(),
-                                    torch.zeros(8, data.edge_attr.shape[0], dtype=torch.get_default_dtype())
+                                    torch.zeros(8, data.edge_attr.shape[0], dtype=torch.get_default_dtype(), device=self.device)
                                 ).t()
                         else:
                             if self.target == 'phiVdphi':
@@ -461,21 +473,21 @@ class DeepHKernel:
                                     (atomic_number_edge_i == condition_atomic_number_i)
                                     & (atomic_number_edge_j == condition_atomic_number_j),
                                     Oij_value[:, condition_orbital_i, condition_orbital_j].t(),
-                                    torch.zeros(3, data.edge_attr.shape[0], dtype=torch.get_default_dtype())
+                                    torch.zeros(3, data.edge_attr.shape[0], dtype=torch.get_default_dtype(), device=self.device)
                                 ).t()
                             else:
                                 label[:, index_out] += torch.where(
                                     (atomic_number_edge_i == condition_atomic_number_i)
                                     & (atomic_number_edge_j == condition_atomic_number_j),
                                     Oij_value[:, condition_orbital_i, condition_orbital_j],
-                                    torch.zeros(data.edge_attr.shape[0], dtype=torch.get_default_dtype())
+                                    torch.zeros(data.edge_attr.shape[0], dtype=torch.get_default_dtype(), device=self.device)
                                 )
             assert len(torch.where((mask != 1) & (mask != 0))[0]) == 0
             mask = mask.bool()
-            data.mask = mask
+            data.mask = mask.cpu()  # FIX: Keep mask on CPU
             del data.term_mask
             if if_only_rc == False:
-                data.label = label
+                data.label = label.cpu()  # FIX: Keep label on CPU
                 if self.target == 'hamiltonian' or self.target == 'density_matrix':
                     del data.term_real
                 elif self.target == 'O_ij':
@@ -485,6 +497,12 @@ class DeepHKernel:
                     del data.rvxc
                     del data.rvna
             dataset_mask.append(data)
+            # FIX: Free GPU memory after each sample
+            del x_gpu, edge_index_gpu, mask, label
+            if if_only_rc == False:
+                del Oij_value
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
         return dataset_mask
 
     def train(self, train_loader, val_loader, test_loader):
