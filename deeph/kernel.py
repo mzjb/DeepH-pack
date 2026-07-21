@@ -501,7 +501,8 @@ class DeepHKernel:
             del x_gpu, edge_index_gpu, mask, label
             if if_only_rc == False:
                 del Oij_value
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
         return dataset_mask
 
     def train(self, train_loader, val_loader, test_loader):

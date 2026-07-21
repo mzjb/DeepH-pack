@@ -333,8 +333,11 @@ class Collater:
         if self.if_lcmp:
             flag_dict = hasattr(graph_list[0], 'subgraph_dict')
             if self.flag_pyg2 and not flag_dict:
-                # For single-sample inference without DFT data, skip LCMP subgraph
-                return Batch.from_data_list(graph_list), None
+                raise RuntimeError(
+                    'Graph data was generated without local coordinate message passing (LCMP) '
+                    'subgraph data. Please regenerate the graph file with if_lcmp_graph=True '
+                    'using the current version of DeepH-pack.'
+                )
             batch = Batch.from_data_list(graph_list)
 
             subgraph_atom_idx_batch = []
